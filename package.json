@@ -1,0 +1,95 @@
+{
+  "name": "evobit-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "vite",
+    "dev:mobile": "vite --host",
+    "build": "vite build",
+    "lint": "eslint . --max-warnings=0",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:ci": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "verify": "npm run lint && npm run test:ci && npm run build",
+    "electron:dev": "concurrently -k \"npm run dev\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
+    "electron:build": "vite build && electron-builder"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.0.2",
+    "@capacitor/cli": "^8.0.2",
+    "@capacitor/core": "^8.0.2",
+    "@capacitor/ios": "^8.0.2",
+    "@emotion/is-prop-valid": "^1.4.0",
+    "@supabase/supabase-js": "^2.95.2",
+    "@xmldom/xmldom": "^0.8.11",
+    "axios": "^1.13.5",
+    "clsx": "^2.1.1",
+    "crypto-js": "^4.2.0",
+    "fast-xml-parser": "^5.3.6",
+    "framer-motion": "^12.33.0",
+    "html5-qrcode": "^2.3.8",
+    "lucide-react": "^0.469.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.13.0",
+    "recharts": "^3.7.0",
+    "rxdb": "^16.21.1",
+    "rxjs": "^7.8.2",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.4.0",
+    "uuid": "^13.0.0",
+    "xlsx": "^0.18.5",
+    "xml-crypto": "^6.1.2",
+    "zod": "^4.3.6"
+  },
+  "description": "Sistema de Controle de Estoque e Vendas",
+  "author": "Evobit Team",
+  "build": {
+    "appId": "com.evobit.app",
+    "productName": "Evobit",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "nsis"
+    },
+    "mac": {
+      "target": "dmg"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.3",
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "electron": "^40.2.1",
+    "electron-builder": "^26.7.0",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "jsdom": "^28.0.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.17",
+    "vite": "^7.2.4",
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^4.0.18",
+    "wait-on": "^9.0.3"
+  }
+}
