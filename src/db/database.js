@@ -8,6 +8,7 @@ import { RxDBQueryBuilderPlugin } from 'rxdb/plugins/query-builder';
 import { wrappedValidateAjvStorage } from 'rxdb/plugins/validate-ajv'; // Optional validation
 
 import { RxDBMigrationPlugin } from 'rxdb/plugins/migration-schema';
+import { v4 as uuidv4 } from 'uuid';
 
 // Enable plugins
 addRxPlugin(RxDBUpdatePlugin);
@@ -215,6 +216,17 @@ const createDatabase = async () => {
                     doc.ingredients.forEach(i => {
                         if (i.discount_from_stock === undefined) {
                             i.discount_from_stock = true;
+                        }
+                    });
+                }
+                return doc;
+            },
+            4: function (doc) {
+                // v3 -> v4: Inject stable IDs into existing ingredients
+                if (Array.isArray(doc.ingredients)) {
+                    doc.ingredients.forEach(i => {
+                        if (!i.id) {
+                            i.id = uuidv4();
                         }
                     });
                 }

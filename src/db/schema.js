@@ -234,7 +234,7 @@ export const categorySchema = {
 // RECEITAS / FICHA TÉCNICA (Capa + Ingredientes)
 export const recipeSchema = {
     title: 'recipe schema',
-    version: 3, // Bumped for discount_from_stock and auto_production
+    version: 4, // Bumped for discount_from_stock and auto_production (v3) -> added ingredient id (v4)
     primaryKey: 'id',
     type: 'object',
     properties: {
@@ -251,13 +251,14 @@ export const recipeSchema = {
             items: {
                 type: 'object',
                 properties: {
+                    id: { type: 'string' },
                     input_product_id: { type: 'string' },
                     quantity: { type: 'number' },
                     unit: { type: 'string' },
                     loss_percentage: { type: 'number' },
                     discount_from_stock: { type: 'boolean' }
                 },
-                required: ['input_product_id', 'quantity']
+                required: ['id', 'input_product_id', 'quantity']
             }
         },
         user_id: { type: 'string' },
