@@ -118,51 +118,102 @@ export const syncCollection = async (collection, tableName) => {
 
         if (localChanges.length > 0) {
             console.log(`↑ Pushing ${localChanges.length} changes for ${tableName}`);
-            const itemsToPush = localChanges.map(doc => {
-                const data = doc.toJSON();
-                // Remove RxDB internal fields
-                delete data._rev;
-                delete data._attachments;
-                delete data._deleted;
-                delete data._meta;
-                return sanitizeForSupabase(data, tableName);
-            });
 
-            // Try batch push first (most efficient)
-            const { error: batchError } = await supabase
-                .from(tableName)
-                .upsert(itemsToPush, { onConflict: 'id', ignoreDuplicates: false });
-
-            if (batchError) {
-                console.warn(`Batch push failed for ${tableName}, falling back to item-by-item:`, batchError.message);
-
-                // Fallback: push items one by one so partial success is possible
+            if (tableName === 'recipes') {
                 let successCount = 0;
-                for (const item of itemsToPush) {
+                for (const doc of localChanges) {
+                    const rawData = doc.toJSON();
+                    if (!rawData.id) {
+                        errors.push(`[PUSH RECIPES] Receita ignorada: ID da receita ausente.`);
+                        continue;
+                    }
+                    
+                    const ingredientsArray = rawData.ingredients || [];
+                    
+                    // Validação defensiva: impede envio se algum ingrediente válido estiver sem ID
+                    const hasInvalidIngredient = ingredientsArray.some(ing => ing.input_product_id && !ing.id);
+                    if (hasInvalidIngredient) {
+                        errors.push(`[PUSH RECIPES] id=${rawData.id.substr(0, 8)}: Receita possui ingrediente(s) sem ID. Sincronização bloqueada para esta receita.`);
+                        continue;
+                    }
+                    
+                    // Remove RxDB internal fields
+                    delete rawData._rev;
+                    delete rawData._attachments;
+                    delete rawData._deleted;
+                    delete rawData._meta;
+                    
+                    const sanitizedRecipe = sanitizeForSupabase(rawData, tableName);
+                    
                     try {
-                        const { error: itemError } = await supabase
-                            .from(tableName)
-                            .upsert([item], { onConflict: 'id', ignoreDuplicates: false });
-
-                        if (itemError) {
-                            errors.push(`[PUSH ${tableName}] id=${item.id?.substr(0, 8)}: ${itemError.message}`);
-                            console.error(`Push item error ${tableName}:`, item.id, itemError);
+                        const { error: rpcError } = await supabase.rpc('sync_recipe_with_ingredients', {
+                            p_recipe: sanitizedRecipe,
+                            p_ingredients: ingredientsArray
+                        });
+                        
+                        if (rpcError) {
+                            errors.push(`[PUSH RECIPES] id=${rawData.id.substr(0, 8)}: ${rpcError.message}`);
+                            console.error(`Push RPC error for recipe:`, rawData.id, rpcError);
                         } else {
                             successCount++;
                         }
-                    } catch (itemErr) {
-                        errors.push(`[PUSH ${tableName}] id=${item.id?.substr(0, 8)}: ${itemErr.message}`);
+                    } catch (err) {
+                        errors.push(`[PUSH RECIPES] id=${rawData.id.substr(0, 8)}: ${err.message}`);
+                        console.error(`Push exception for recipe:`, rawData.id, err);
                     }
                 }
+                
                 pushed = successCount;
-
-                // Only update push timestamp if ALL items succeeded
-                if (successCount === itemsToPush.length) {
+                if (successCount === localChanges.length) {
                     localStorage.setItem(`push_${tableName}`, new Date().toISOString());
                 }
             } else {
-                pushed = itemsToPush.length;
-                localStorage.setItem(`push_${tableName}`, new Date().toISOString());
+                const itemsToPush = localChanges.map(doc => {
+                    const data = doc.toJSON();
+                    // Remove RxDB internal fields
+                    delete data._rev;
+                    delete data._attachments;
+                    delete data._deleted;
+                    delete data._meta;
+                    return sanitizeForSupabase(data, tableName);
+                });
+
+                // Try batch push first (most efficient)
+                const { error: batchError } = await supabase
+                    .from(tableName)
+                    .upsert(itemsToPush, { onConflict: 'id', ignoreDuplicates: false });
+
+                if (batchError) {
+                    console.warn(`Batch push failed for ${tableName}, falling back to item-by-item:`, batchError.message);
+
+                    // Fallback: push items one by one so partial success is possible
+                    let successCount = 0;
+                    for (const item of itemsToPush) {
+                        try {
+                            const { error: itemError } = await supabase
+                                .from(tableName)
+                                .upsert([item], { onConflict: 'id', ignoreDuplicates: false });
+
+                            if (itemError) {
+                                errors.push(`[PUSH ${tableName}] id=${item.id?.substr(0, 8)}: ${itemError.message}`);
+                                console.error(`Push item error ${tableName}:`, item.id, itemError);
+                            } else {
+                                successCount++;
+                            }
+                        } catch (itemErr) {
+                            errors.push(`[PUSH ${tableName}] id=${item.id?.substr(0, 8)}: ${itemErr.message}`);
+                        }
+                    }
+                    pushed = successCount;
+
+                    // Only update push timestamp if ALL items succeeded
+                    if (successCount === itemsToPush.length) {
+                        localStorage.setItem(`push_${tableName}`, new Date().toISOString());
+                    }
+                } else {
+                    pushed = itemsToPush.length;
+                    localStorage.setItem(`push_${tableName}`, new Date().toISOString());
+                }
             }
         }
     } catch (err) {
