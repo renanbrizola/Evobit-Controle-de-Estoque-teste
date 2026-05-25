@@ -149,6 +149,9 @@ export const api = {
         },
         create: async (product) => {
             const user = await getCurrentUser();
+            if (!user || !user.id) {
+                throw new Error("Sessão de usuário ausente. Faça login novamente para cadastrar.");
+            }
 
             const db = await getDatabase();
             if (!db) {
@@ -159,7 +162,7 @@ export const api = {
             const newProduct = {
                 id: uuidv4(),
                 ...product,
-                user_id: user?.id || '',
+                user_id: user.id,
                 updated_at: new Date().toISOString(),
                 current_stock: Number(product.current_stock || 0),
                 min_stock: Number(product.min_stock || 0),
@@ -319,6 +322,9 @@ export const api = {
         createTransaction: async (items) => {
             const db = await getDatabase();
             const user = await getCurrentUser();
+            if (!user || !user.id) {
+                throw new Error("Sessão de usuário ausente. Faça login novamente para cadastrar.");
+            }
 
             const results = [];
             const now = new Date().toISOString();
@@ -360,7 +366,7 @@ export const api = {
                         expiration_date: item.validity || '',
                         provider: item.provider || '',
                         movement_id: movementId,
-                        user_id: user?.id || '',
+                        user_id: user.id,
                         created_at: now,
                         updated_at: now,
                         deleted_at: ''
@@ -384,7 +390,7 @@ export const api = {
                     batch_id: batchId || '',
                     reference_id: '',
                     date: now,
-                    user_id: user?.id || '',
+                    user_id: user.id,
                     updated_at: now
                 };
 
@@ -515,7 +521,10 @@ export const api = {
         },
         create: async (name) => {
             const user = await getCurrentUser();
-            const userId = user?.id || '';
+            if (!user || !user.id) {
+                throw new Error("Sessão de usuário ausente. Faça login novamente para cadastrar.");
+            }
+            const userId = user.id;
 
             if (!name || typeof name !== 'string' || !name.trim()) {
                 throw new Error("Nome da categoria inválido");
@@ -588,6 +597,9 @@ export const api = {
         create: async (data) => {
             const db = await getDatabase();
             const user = await getCurrentUser();
+            if (!user || !user.id) {
+                throw new Error("Sessão de usuário ausente. Faça login novamente para cadastrar.");
+            }
 
             if (!data.name || !data.name.trim()) {
                 throw new Error("Nome do fornecedor é obrigatório");
@@ -622,7 +634,7 @@ export const api = {
                 bank_info: data.bank_info || '',
                 credit_limit: Number(data.credit_limit || 0),
                 is_active: data.is_active !== undefined ? data.is_active : true,
-                user_id: user?.id || '',
+                user_id: user.id,
                 updated_at: new Date().toISOString()
             };
 

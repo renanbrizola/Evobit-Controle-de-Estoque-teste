@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { ensureSupabaseSession } from '../services/authHelper';
 
 /**
  * Fields that exist in RxDB (embedded/denormalized) but NOT in the Supabase
@@ -8,15 +9,47 @@ const EXCLUDED_FIELDS_BY_TABLE = {
     recipes: ['ingredients'], // Embedded array in RxDB, stored relationally or doesn't exist in PG
 };
 
-// Helper to remove empty strings from UUID/Timestamp fields before push
-// and strip fields that don't exist in the target Supabase table
-const sanitizeForSupabase = (data, tableName) => {
-    const sanitized = { ...data };
+const ALLOWED_FIELDS_BY_TABLE = {
+    products: [
+        'id',
+        'user_id',
+        'name',
+        'category',
+        'unit',
+        'min_stock',
+        'current_stock',
+        'created_at',
+        'updated_at',
+        'deleted_at',
+        'is_raw_material',
+        'is_service',
+        'is_active',
+        'price',
+        'cost_price',
+        'average_cost',
+        'barcode'
+    ]
+};
 
-    // 1. Strip fields that don't exist in Supabase for this table
+const sanitizeForSupabase = (data, tableName) => {
+    let sanitized = { ...data };
+
+    // 1. Strip fields that don't exist in Supabase for this table (Blacklist)
     const excludedFields = EXCLUDED_FIELDS_BY_TABLE[tableName] || [];
     for (const field of excludedFields) {
         delete sanitized[field];
+    }
+
+    // 1.5. Strip unknown fields for tables with strong schema drift (Whitelist)
+    const allowedFields = ALLOWED_FIELDS_BY_TABLE[tableName];
+    if (allowedFields) {
+        const strictlyAllowed = {};
+        for (const field of allowedFields) {
+            if (sanitized[field] !== undefined) {
+                strictlyAllowed[field] = sanitized[field];
+            }
+        }
+        sanitized = strictlyAllowed;
     }
 
     // 2. Convert empty strings to null for UUID/date fields
@@ -59,11 +92,14 @@ export const syncCollection = async (collection, tableName) => {
         const timestampField = TIMESTAMP_FIELD_OVERRIDES[tableName] || 'updated_at';
 
         // ─── 1. PULL: Fetch changes from Supabase ─────────────────────
-        const lastSync = localStorage.getItem(`sync_${tableName}`) || new Date(0).toISOString();
+        // Evitar pull cego de recipes, pois o Supabase não retorna os ingredientes embutidos na mesma tabela,
+        // o que causaria um bulkUpsert destrutivo no RxDB (apagando ingredientes) e 409 Conflicts.
+        if (tableName !== 'recipes') {
+            const lastSync = localStorage.getItem(`sync_${tableName}`) || new Date(0).toISOString();
 
-        const { data: remoteChanges, error } = await supabase
-            .from(tableName)
-            .select('*')
+            const { data: remoteChanges, error } = await supabase
+                .from(tableName)
+                .select('*')
             .gt(timestampField, lastSync);
 
         if (error) {
@@ -107,6 +143,7 @@ export const syncCollection = async (collection, tableName) => {
 
             localStorage.setItem(`sync_${tableName}`, lastTimestamp);
         }
+        } // Fim do if (tableName !== 'recipes')
 
         // ─── 2. PUSH: Push local changes to Supabase ─────────────────────
         const lastPush = localStorage.getItem(`push_${tableName}`) || new Date(0).toISOString();
@@ -130,13 +167,6 @@ export const syncCollection = async (collection, tableName) => {
                     
                     const ingredientsArray = rawData.ingredients || [];
                     
-                    // Validação defensiva: impede envio se algum ingrediente válido estiver sem ID
-                    const hasInvalidIngredient = ingredientsArray.some(ing => ing.input_product_id && !ing.id);
-                    if (hasInvalidIngredient) {
-                        errors.push(`[PUSH RECIPES] id=${rawData.id.substr(0, 8)}: Receita possui ingrediente(s) sem ID. Sincronização bloqueada para esta receita.`);
-                        continue;
-                    }
-                    
                     // Remove RxDB internal fields
                     delete rawData._rev;
                     delete rawData._attachments;
@@ -156,6 +186,10 @@ export const syncCollection = async (collection, tableName) => {
                             console.error(`Push RPC error for recipe:`, rawData.id, rpcError);
                         } else {
                             successCount++;
+                            // Atualiza o lastPush localmente pelo maior updated_at validado
+                            if (rawData[timestampField] > lastPush) {
+                                localStorage.setItem(`push_${tableName}`, rawData[timestampField]);
+                            }
                         }
                     } catch (err) {
                         errors.push(`[PUSH RECIPES] id=${rawData.id.substr(0, 8)}: ${err.message}`);
@@ -164,9 +198,6 @@ export const syncCollection = async (collection, tableName) => {
                 }
                 
                 pushed = successCount;
-                if (successCount === localChanges.length) {
-                    localStorage.setItem(`push_${tableName}`, new Date().toISOString());
-                }
             } else {
                 const itemsToPush = localChanges.map(doc => {
                     const data = doc.toJSON();
@@ -236,6 +267,11 @@ export const syncAll = async (db) => {
     }
 
     console.log('🔄 Starting sync...');
+    
+    // NOVO: Garantir que o client do Supabase tenha uma sessão válida em memória
+    // antes de disparar requisições REST/RPC.
+    await ensureSupabaseSession();
+
     const startTime = Date.now();
     const allErrors = [];
     let totalPulled = 0;
