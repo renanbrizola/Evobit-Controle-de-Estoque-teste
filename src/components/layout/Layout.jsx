@@ -7,7 +7,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 import clsx from 'clsx';
 import Modal from '../ui/Modal';
 import { useModules } from '../../contexts/ModuleContext';
-import { Lock, TrendingUp, ShoppingCart, DollarSign, BarChart3, FileText, ChefHat } from 'lucide-react'; // Import icons needed
+import { Lock, TrendingUp, ShoppingCart, DollarSign, BarChart3, FileText, ChefHat, Cpu } from 'lucide-react'; // Import icons needed
 
 const Layout = () => {
     const { signOut, user } = useAuth();
@@ -77,10 +77,12 @@ const Layout = () => {
 
     // HELPER: Detect current module context from URL
     const getContextFromPath = (path) => {
+        if (path.includes('/ficha-tecnica')) return 'technical_sheet';
         if (path.includes('/vendas') || path.includes('/clientes') || path.includes('/dashboard-vendas')) return 'sales';
         if (path.includes('/compras') || path.includes('/dashboard-compras')) return 'purchases';
         if (path.includes('/financeiro') || path.includes('/dashboard-financeiro')) return 'finance';
-        if (path.includes('/dashboard') || path.includes('/estoque') || path.includes('/produtos') || path.includes('/movimentacoes') || path.includes('/fornecedores') || path.includes('/categorias') || path.includes('/historico') || path.includes('/relatorios')) return 'inventory';
+        if (path.includes('/dashboard') && !path.includes('-vendas') && !path.includes('-compras') && !path.includes('-financeiro')) return 'inventory';
+        if (path.includes('/estoque') || path.includes('/produtos') || path.includes('/movimentacoes') || path.includes('/fornecedores') || path.includes('/categorias') || path.includes('/historico') || path.includes('/relatorios')) return 'inventory';
         return null; // neutral pages (visao-geral, configuracoes) — keep previous context
     };
 
@@ -105,11 +107,17 @@ const Layout = () => {
         // --- CADASTROS (ESTOQUE) ---
         { path: '/app/produtos', label: t('menu', 'products'), icon: Tags, module: 'inventory' },
         { path: '/app/categorias', label: t('menu', 'categories'), icon: Tag, module: 'inventory' },
-
         { path: '/app/fornecedores', label: t('menu', 'providers'), icon: Users, module: 'inventory' },
 
         // --- RELATÓRIOS (ESTOQUE) ---
         { path: '/app/relatorios', label: 'Relatórios', icon: FileText, module: 'inventory' },
+
+        // --- FICHA TÉCNICA ---
+        { path: '/app/ficha-tecnica/dashboard', label: 'Dashboard', icon: BarChart3, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/insumos', label: 'Insumos', icon: Package, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/fichas', label: 'Fichas Técnicas', icon: ShoppingBag, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/equipamentos', label: 'Equipamentos', icon: Cpu, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/precificacao', label: 'Precificação', icon: Tag, module: 'technical_sheet' },
 
         // --- VENDAS ---
         { path: '/app/dashboard-vendas', label: 'Dashboard', icon: BarChart3, module: 'sales' },
@@ -144,6 +152,7 @@ const Layout = () => {
             case 'sales': return 'Vendas';
             case 'purchases': return 'Compras';
             case 'finance': return 'Financeiro';
+            case 'technical_sheet': return 'Ficha Técnica';
             default: return 'Estoque';
         }
     };

@@ -9,6 +9,7 @@ import Inventory from './pages/Inventory';
 import Providers from './pages/Providers';
 import Categories from './pages/Categories';
 import History from './pages/History';
+import TechnicalSheetProvisional from './pages/TechnicalSheetProvisional';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -154,6 +155,17 @@ function App() {
                           <Route path="categorias" element={<SectionErrorBoundary section="categories"><Categories /></SectionErrorBoundary>} />
                           <Route path="historico" element={<SectionErrorBoundary section="history"><History /></SectionErrorBoundary>} />
                           <Route path="relatorios" element={<SectionErrorBoundary section="reports"><Reports /></SectionErrorBoundary>} />
+                        </Route>
+
+                        {/* FICHA TÉCNICA MODULE */}
+                        <Route element={<ModuleGuard requiredModule="technical_sheet" />}>
+                          <Route path="ficha-tecnica">
+                            <Route path="dashboard" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
+                            <Route path="insumos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
+                            <Route path="fichas" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
+                            <Route path="equipamentos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
+                            <Route path="precificacao" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
+                          </Route>
                         </Route>
 
                         {/* VENDAS MODULE */}

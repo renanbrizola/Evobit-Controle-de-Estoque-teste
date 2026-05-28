@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useModules } from '../contexts/ModuleContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
-import { LogOut, ArrowRight, Lock, Package, ShoppingCart, TrendingUp, DollarSign } from 'lucide-react';
+import { LogOut, ArrowRight, Lock, Package, ShoppingCart, TrendingUp, DollarSign, ChefHat } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import clsx from 'clsx';
 import { toast } from 'sonner';
@@ -51,6 +51,17 @@ const Modules = () => {
             path: '/app/dashboard-vendas',
             color: 'bg-purple-500',
             textColor: 'text-purple-500'
+        },
+        {
+            key: 'technical_sheet',
+            name: 'Ficha Técnica',
+            description: 'Fichas técnicas, engenharia de cardápio e controle de fabricação.',
+            icon: ChefHat,
+            active: hasModule('technical_sheet'),
+            price: 97,
+            path: '/app/ficha-tecnica/dashboard',
+            color: 'bg-orange-500',
+            textColor: 'text-orange-500'
         },
         {
             key: 'finance',

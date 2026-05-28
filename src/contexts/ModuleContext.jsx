@@ -9,6 +9,7 @@ export const ModuleProvider = ({ children }) => {
     const { user } = useAuth();
     const [modules, setModules] = useState({
         inventory: true, // Core module, always active for now
+        technical_sheet: true, // Activated by default for testing
         purchases: false,
         sales: false,
         finance: false
@@ -53,6 +54,7 @@ export const ModuleProvider = ({ children }) => {
     const resetModules = () => {
         const defaults = {
             inventory: true,
+            technical_sheet: true,
             purchases: false,
             sales: false,
             finance: false
@@ -63,8 +65,8 @@ export const ModuleProvider = ({ children }) => {
     };
 
     const hasModule = (moduleName) => {
-        // Força o bloqueio de qualquer módulo que não seja estoque
-        if (moduleName !== 'inventory') return false;
+        // Força o bloqueio de qualquer módulo que não seja estoque ou ficha técnica
+        if (moduleName !== 'inventory' && moduleName !== 'technical_sheet') return false;
         return !!modules[moduleName];
     };
 
