@@ -7,6 +7,29 @@ export default {
     theme: {
         extend: {
             colors: {
+                // Tokens do Projeto Ficha Técnica (Novo Design System)
+                'evobit': {
+                    paper: '#F5F2EB',
+                    surface: '#FFFFFF',
+                    subtle: '#FBF9F5',
+                    line: '#D9D5CD',
+                    ink: '#1B2329',
+                },
+                'primary': {
+                    50: '#EEF5F5',
+                    100: '#DCEBEC',
+                    600: '#2C676E',
+                    700: '#23565D',
+                    900: '#183F45',
+                },
+                'accent': {
+                    50: '#F7EEE7',
+                    100: '#F0E1D3',
+                    600: '#B87942',
+                    700: '#A66731',
+                    800: '#8C5425',
+                },
+                // Tokens Antigos Evobit (Mantendo compatibilidade)
                 'brand': {
                     dark: 'rgb(var(--color-dark) / <alpha-value>)',
                     primary: 'rgb(var(--color-primary) / <alpha-value>)',
@@ -17,12 +40,13 @@ export default {
                     danger: '#EF4444',
                     warning: '#F59E0B',
                     info: '#3B82F6',
-                    surface: '#18181B', // Zinc 900 - Keep constant for specific dark surfaces if needed, or map to var
+                    surface: '#18181B', // Zinc 900
                 }
             },
             fontFamily: {
-                'sans': ['Poppins', 'sans-serif'],
+                'sans': ['"IBM Plex Sans"', 'Poppins', 'sans-serif'],
                 'serif': ['"Playfair Display"', 'serif'],
+                'mono': ['"IBM Plex Mono"', 'monospace'],
             },
             borderRadius: {
                 'xl': '1rem',

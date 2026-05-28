@@ -148,265 +148,241 @@ const Layout = () => {
         }
     };
 
-    return (
-        <div className="min-h-screen flex flex-col md:flex-row font-sans selection:bg-brand-primary/30 transition-colors duration-500 bg-gray-50 text-gray-900">
-            {/* Desktop Sidebar (Left) - Glassmorphism Floating */}
-            <aside className={clsx(
-                "hidden md:flex flex-col h-[calc(100vh-2rem)] sticky top-4 ml-4 rounded-[2.5rem] border border-white/20 z-50 transition-all duration-300 backdrop-blur-2xl bg-white/80 dark:bg-[#121212]/80 shadow-2xl",
-                isCollapsed ? "w-24" : "w-20 lg:w-72"
-            )}>
-                <div className="p-6 flex flex-col items-center lg:items-start gap-1 relative">
-                    {/* Toggle Button */}
-                    <button
-                        onClick={toggleSidebar}
-                        className={clsx(
-                            "absolute top-6 right-6 p-1 rounded-lg text-gray-400 hover:text-brand-primary hover:bg-gray-100 dark:hover:bg-white/5 transition-all hidden lg:flex",
-                            isCollapsed && "right-auto left-1/2 -translate-x-1/2 top-4"
-                        )}
-                        title={isCollapsed ? "Expandir Menu" : "Recolher Menu"}
-                    >
-                        {isCollapsed ? <PanelLeft size={20} /> : <PanelLeftClose size={20} />}
-                    </button>
+    const groups = [
+        {
+            group: 'Principal',
+            items: navItems.filter(i => i.alwaysVisible && i.path.includes('visao-geral'))
+        },
+        {
+            group: getContextLabel(currentContext),
+            items: navItems.filter(i => !i.alwaysVisible)
+        },
+        {
+            group: 'Administração',
+            items: navItems.filter(i => i.alwaysVisible && !i.path.includes('visao-geral'))
+        }
+    ].filter(g => g.items.length > 0);
 
-                    <h1 className={clsx(
-                        "text-3xl font-serif font-bold tracking-tighter text-gray-900 dark:text-white drop-shadow-sm transition-all duration-300",
-                        isCollapsed ? "hidden scale-0" : "hidden lg:block scale-100"
-                    )}>
-                        {companyName}
-                    </h1>
-
-                    {/* Logo Icon for Collapsed/Mobile */}
-                    <div className={clsx(
-                        "w-12 h-12 bg-gradient-gold rounded-2xl flex items-center justify-center shadow-glow transition-all duration-300",
-                        isCollapsed ? "flex scale-100 mt-8" : "lg:hidden"
-                    )}>
-                        <span className="font-serif font-bold text-brand-dark text-xl">EB</span>
-                    </div>
-                </div>
-
-                {/* BACK TO MODULES BUTTON */}
-                <div className="px-4 mb-4 flex justify-center">
-                    <button
-                        onClick={() => navigate('/modules')}
-                        className={clsx(
-                            "flex items-center gap-3 bg-gray-900 dark:bg-white text-white dark:text-black rounded-2xl hover:scale-[1.02] transition-all shadow-lg hover:shadow-xl group",
-                            isCollapsed ? "p-3 w-12 justify-center" : "w-full p-3.5 px-4"
-                        )}
-                        title="Todos os Módulos"
-                    >
-                        <Grid size={20} className="text-brand-primary transition-colors shrink-0" />
-                        <span className={clsx(
-                            "font-bold text-sm text-brand-primary whitespace-nowrap overflow-hidden transition-all duration-300",
-                            isCollapsed ? "w-0 opacity-0 hidden" : "w-auto opacity-100 hidden lg:block"
-                        )}>
-                            Todos os Módulos
-                        </span>
-                    </button>
-                </div>
-
-                {/* Context Title */}
-                <div className={clsx(
-                    "px-6 pb-2 transition-all duration-300 overflow-hidden whitespace-nowrap",
-                    isCollapsed ? "h-0 opacity-0" : "h-auto opacity-100 hidden lg:block"
-                )}>
-                    <span className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">
-                        Módulo Atual
-                    </span>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mt-1">
-                        {getContextLabel(currentContext)}
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10B981] animate-pulse"></span>
-                    </h2>
-                </div>
-
-                <nav className="flex-1 px-3 py-2 flex flex-col gap-1 overflow-y-auto custom-scrollbar overflow-x-hidden">
-                    {navItems.map((item) => {
-                        const isActive = location.pathname === item.path;
-                        const isLocked = item.module && !modules[item.module];
-
-                        if (isLocked) {
-                            return (
-                                <button
-                                    key={item.path}
-                                    onClick={() => navigate('/modules')}
-                                    className={clsx(
-                                        "relative group flex items-center rounded-2xl transition-all duration-300 w-full text-left text-gray-400 hover:bg-gray-100/50 cursor-not-allowed",
-                                        isCollapsed ? "justify-center p-3" : "px-4 py-3.5"
-                                    )}
-                                >
-                                    <div className="relative">
-                                        <item.icon size={22} strokeWidth={2} className="opacity-50 grayscale shrink-0" />
-                                        <div className="absolute -top-1 -right-1 bg-gray-200 rounded-full p-0.5">
-                                            <Lock size={10} className="text-gray-500" />
-                                        </div>
-                                    </div>
-                                    <span className={clsx(
-                                        "font-medium tracking-normal opacity-60 whitespace-nowrap transition-all duration-300 overflow-hidden",
-                                        isCollapsed ? "w-0 ml-0 opacity-0 hidden" : "w-auto ml-3 hidden lg:block opacity-100"
-                                    )}>
-                                        {item.label}
-                                    </span>
-                                </button>
-                            );
-                        }
-
-                        return (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                className={clsx(
-                                    "relative group flex items-center rounded-2xl transition-all duration-300",
-                                    isCollapsed ? "justify-center p-3" : "px-4 py-3.5",
-                                    isActive
-                                        ? "bg-brand-primary/10 text-brand-primary border border-brand-primary/20 font-bold shadow-sm"
-                                        : "text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
-                                )}
-                                title={isCollapsed ? item.label : ""}
-                            >
-                                <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} className={clsx("transition-transform duration-300 group-hover:scale-110 shrink-0", !isActive && "group-hover:text-brand-primary")} />
-                                <span className={clsx(
-                                    "font-medium whitespace-nowrap transition-all duration-300 overflow-hidden",
-                                    isCollapsed ? "w-0 ml-0 opacity-0 hidden" : "w-auto ml-3 hidden lg:block opacity-100",
-                                    isActive ? "tracking-wide" : "tracking-normal"
-                                )}>
-                                    {item.label}
-                                </span>
-                                {/* Alert Badge */}
-                                {item.badge > 0 && (
-                                    <span className={clsx(
-                                        "bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg animate-pulse",
-                                        isCollapsed ? "absolute -top-1 -right-1 w-4 h-4" : "ml-auto w-5 h-5 hidden lg:flex"
-                                    )}>
-                                        {item.badge > 9 ? '9+' : item.badge}
-                                    </span>
-                                )}
-                                {isActive && !isCollapsed && !item.badge && (
-                                    <div className="absolute right-2 w-1.5 h-1.5 rounded-full bg-brand-primary hidden lg:block animate-pulse shadow-glow" />
-                                )}
-                            </Link>
-                        );
-                    })}
-                </nav>
-
-                <div className="p-4 border-t border-gray-100 dark:border-white/5 flex flex-col items-center">
-                    <button
-                        onClick={handleLogoutClick}
-                        className={clsx(
-                            "w-full flex items-center rounded-2xl text-red-500/70 hover:bg-red-500/10 hover:text-red-500 transition-all duration-300 group",
-                            isCollapsed ? "justify-center p-3" : "px-4 py-3.5 justify-center lg:justify-start"
-                        )}
-                        title={t('menu', 'logout')}
-                    >
-                        <LogOut size={20} className="group-hover:-translate-x-1 transition-transform shrink-0" />
-                        <span className={clsx(
-                            "ml-3 font-bold hidden overflow-hidden transition-all duration-300 whitespace-nowrap",
-                            !isCollapsed && "lg:block w-auto"
-                        )}>{t('menu', 'logout')}</span>
-                    </button>
-                </div>
-            </aside>
-
-            {/* Mobile Header */}
-            <header className="md:hidden sticky top-0 z-40 backdrop-blur-xl border-b shadow-lg px-4 py-3 flex items-center justify-between bg-white/90 border-gray-200">
-                <button onClick={() => setIsMenuOpen(true)} className="p-2 rounded-xl bg-gray-100 text-gray-700">
-                    <Menu size={24} />
-                </button>
-                <h1 className="text-xl font-serif font-bold text-transparent bg-clip-text bg-gradient-gold">
-                    {companyName}
-                </h1>
-                <div className="w-10" /> {/* Spacer */}
-            </header>
-
-            {/* Mobile Menu Overlay */}
-            {isMenuOpen && (
-                <div className="md:hidden fixed inset-0 z-[60] flex flex-col backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200 bg-white/95">
-                    <div className="p-6 flex justify-between items-center border-b border-gray-200">
-                        <div>
-                            <h2 className="text-2xl font-serif font-bold text-transparent bg-clip-text bg-gradient-gold">Menu</h2>
+    const SidebarContent = () => (
+        <div className="flex h-full flex-col font-sans">
+            <div className="border-b border-[var(--sidebar-line)] px-5 py-5">
+                <div className="rounded-[14px] border border-white/10 bg-white/5 p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-secondary)] text-xs font-bold tracking-[0.18em] text-white shadow-[0_12px_24px_rgba(166,103,49,0.25)]">
+                            EV
                         </div>
+                        <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-[var(--sidebar-text-strong)]">{companyName}</p>
+                            <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-[var(--sidebar-text)]">
+                                precisão produtiva
+                            </p>
+                        </div>
+                    </div>
+                    <div className="mt-4 border-t border-[var(--sidebar-line)] pt-3">
                         <button
-                            onClick={() => setIsMenuOpen(false)}
-                            className="p-3 rounded-full hover:opacity-80 bg-gray-100 text-gray-700"
+                            onClick={() => navigate('/modules')}
+                            className="flex w-full items-center justify-center gap-2 rounded-[10px] bg-white/10 px-3 py-2 text-[12px] font-medium text-[var(--sidebar-text-strong)] transition-colors hover:bg-white/15"
                         >
-                            <X size={24} />
+                            <Grid size={14} className="text-[var(--sidebar-text)]" />
+                            Trocar Módulo
                         </button>
                     </div>
-                    <nav className="flex-1 overflow-y-auto py-6 px-4 flex flex-col gap-3">
-                        {navItems.map((item) => (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                onClick={() => setIsMenuOpen(false)}
-                                className={clsx(
-                                    "p-4 rounded-2xl flex items-center gap-4 text-lg font-bold transition-all",
-                                    location.pathname === item.path
-                                        ? "bg-gradient-gold text-white shadow-glow"
-                                        : "bg-gray-50 text-gray-700 border border-gray-200"
-                                )}
-                            >
-                                <item.icon size={24} />
-                                {item.label}
-                            </Link>
-                        ))}
-                    </nav>
+                </div>
+            </div>
+
+            <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
+                <div className="space-y-5">
+                    {groups.map((group) => (
+                        <div key={group.group}>
+                            <p className="px-2 pb-2 font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--sidebar-text)]">
+                                {group.group}
+                            </p>
+                            <div className="space-y-1">
+                                {group.items.map((item) => {
+                                    const active = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+                                    const isLocked = item.module && !modules[item.module];
+
+                                    return (
+                                        <div key={item.path}>
+                                            <Link
+                                                to={isLocked ? '#' : item.path}
+                                                onClick={(e) => {
+                                                    if (isLocked) {
+                                                        e.preventDefault();
+                                                        navigate('/modules');
+                                                    } else {
+                                                        setIsMenuOpen(false);
+                                                    }
+                                                }}
+                                                className={clsx(
+                                                    'relative flex items-center gap-3 rounded-[12px] border px-3 py-3 text-[13px] font-medium transition-all duration-150',
+                                                    active
+                                                        ? 'border-white/12 bg-white/10 text-[var(--sidebar-text-strong)]'
+                                                        : 'border-transparent text-[var(--sidebar-text)] hover:border-white/8 hover:bg-white/6 hover:text-[var(--sidebar-text-strong)]',
+                                                    isLocked && 'opacity-50 hover:bg-transparent cursor-not-allowed'
+                                                )}
+                                            >
+                                                <span
+                                                    className={clsx(
+                                                        'absolute inset-y-2 left-0 w-[3px] rounded-r-full transition-opacity',
+                                                        active ? 'opacity-100' : 'opacity-0',
+                                                    )}
+                                                    style={{ backgroundColor: 'var(--color-secondary)' }}
+                                                />
+                                                <span
+                                                    className={clsx(
+                                                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border text-sm transition-colors',
+                                                        active
+                                                            ? 'border-white/12 bg-black/10 text-[#f2dfbf]'
+                                                            : 'border-white/8 bg-black/5 text-[var(--sidebar-text)]',
+                                                    )}
+                                                >
+                                                    <item.icon size={16} />
+                                                </span>
+                                                <span className="min-w-0 flex-1 truncate leading-none">{item.label}</span>
+                                                
+                                                {isLocked && <Lock size={14} className="text-[var(--sidebar-text)] shrink-0 ml-2" />}
+                                                
+                                                {item.badge > 0 && !isLocked && (
+                                                    <span className="ml-auto inline-flex items-center rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400 border border-red-500/30">
+                                                        {item.badge > 9 ? '9+' : item.badge}
+                                                    </span>
+                                                )}
+                                            </Link>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </nav>
+
+            <div className="border-t border-[var(--sidebar-line)] px-4 py-4">
+                <div className="rounded-[14px] border border-white/10 bg-white/5 p-3">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-secondary)] text-[11px] font-bold uppercase text-white">
+                            {(user?.name ?? 'DM').slice(0, 2)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-[13px] font-semibold text-[var(--sidebar-text-strong)]">
+                                {user?.name ?? 'Usuário'}
+                            </p>
+                            <p className="mt-0.5 truncate text-[11px] text-[var(--sidebar-text)]">
+                                {user?.role ?? 'Gestor'}
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleLogoutClick}
+                            title={t('menu', 'logout')}
+                            className="rounded-[10px] border border-white/8 bg-black/10 p-2 text-[var(--sidebar-text)] transition-colors hover:border-white/14 hover:text-[var(--sidebar-text-strong)]"
+                        >
+                            <LogOut size={14} />
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="flex h-screen bg-[var(--bg-app)] font-sans text-[var(--text-strong)] overflow-hidden">
+            <aside
+                className="hidden w-[272px] shrink-0 border-r border-[var(--sidebar-line)] lg:flex lg:flex-col"
+                style={{ backgroundColor: 'var(--sidebar-bg)' }}
+            >
+                <SidebarContent />
+            </aside>
+
+            {isMenuOpen && (
+                <div className="fixed inset-0 z-50 lg:hidden">
+                    <div
+                        className="absolute inset-0 bg-black/60 transition-opacity"
+                        onClick={() => setIsMenuOpen(false)}
+                        aria-hidden="true"
+                    />
+                    <aside
+                        className="absolute inset-y-0 left-0 flex w-[272px] flex-col border-r border-[var(--sidebar-line)] shadow-[var(--shadow-overlay)] transition-transform duration-300"
+                        style={{ backgroundColor: 'var(--sidebar-bg)' }}
+                    >
+                        <SidebarContent />
+                    </aside>
                 </div>
             )}
 
+            <div className="flex flex-1 flex-col min-w-0 h-screen overflow-hidden">
+                <header className="sticky top-0 z-20 border-b border-[var(--line-soft)] bg-[var(--bg-app)]">
+                    <div className="flex items-start gap-4 px-4 py-3 lg:px-6">
+                        <button
+                            onClick={() => setIsMenuOpen(true)}
+                            aria-label="Abrir menu"
+                            className="rounded-[10px] border border-[var(--line-soft)] bg-white p-2 text-[var(--text-muted)] transition hover:bg-[var(--bg-subtle)] hover:text-[var(--text-strong)] lg:hidden"
+                        >
+                            <Menu size={18} />
+                        </button>
 
-            {/* Main Content Area */}
-            <main className="flex-1 w-full md:w-auto h-screen overflow-y-auto overflow-x-hidden relative custom-scrollbar">
-                {/* Top Bar (Desktop) */}
-                {/* Header Removed to allow custom page headers */}
+                        <div className="min-w-0 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-mono text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                                    Evobit
+                                </span>
+                            </div>
+                            <div className="mt-1 flex min-w-0 flex-col gap-1 lg:flex-row lg:items-baseline lg:gap-4">
+                                <h1 className="truncate text-xl font-semibold leading-tight text-[var(--text-strong)]">
+                                    {navItems.find(i => location.pathname === i.path || location.pathname.startsWith(`${i.path}/`))?.label || companyName}
+                                </h1>
+                            </div>
+                        </div>
+                    </div>
+                </header>
 
-                <div className="px-4 py-6 md:px-8 md:py-8 max-w-7xl mx-auto pb-24">
-                    <Outlet />
-                </div>
-            </main>
+                <main className="flex-1 overflow-y-auto px-4 py-6 lg:px-8 custom-scrollbar relative">
+                    <div className="max-w-7xl mx-auto pb-24">
+                        <Outlet />
+                    </div>
+                </main>
+            </div>
 
-            {/* Logout Modal */}
             <Modal isOpen={isLogoutConfirmOpen} onClose={() => setIsLogoutConfirmOpen(false)} className="max-w-sm">
                 <div className="text-center mb-6">
-                    <div className="w-20 h-20 bg-brand-danger/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-danger shadow-[0_0_30px_rgba(239,68,68,0.2)]">
+                    <div className="w-20 h-20 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 text-red-600">
                         <LogOut size={40} />
                     </div>
                     <h3 className="text-2xl font-bold mb-2 text-gray-900">{t('menu', 'logoutTitle')}</h3>
-                    <p className="text-gray-400">{t('menu', 'logoutMessage')}</p>
+                    <p className="text-gray-500">{t('menu', 'logoutMessage')}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <button
                         onClick={() => setIsLogoutConfirmOpen(false)}
-                        className="py-3 px-4 rounded-xl font-bold transition-colors border text-gray-600 hover:bg-gray-50 border-gray-200"
+                        className="py-3 px-4 rounded-[10px] font-bold transition-colors border text-gray-600 hover:bg-gray-50 border-gray-200"
                     >
                         {t('menu', 'cancel')}
                     </button>
                     <button
                         onClick={confirmLogout}
-                        className="py-3 px-4 rounded-xl font-bold text-white bg-brand-danger hover:bg-red-600 shadow-lg shadow-red-900/40 transition-all hover:scale-105"
+                        className="py-3 px-4 rounded-[10px] font-bold text-white bg-red-600 hover:bg-red-700 transition-all"
                     >
                         {t('menu', 'confirmLogout')}
                     </button>
                 </div>
             </Modal>
 
-            {/* Module Switch Modal */}
             <Modal isOpen={isModuleConfirmOpen} onClose={() => setIsModuleConfirmOpen(false)} className="max-w-sm">
-                {/* Decorative background element */}
-                <div className="absolute -top-10 -right-10 w-32 h-32 bg-brand-primary/10 rounded-full blur-2xl pointer-events-none" />
-
                 <div className="text-center mb-6 relative z-10">
-                    <div className="w-20 h-20 bg-brand-primary/10 rounded-full flex items-center justify-center mx-auto mb-4 text-brand-primary shadow-glow">
+                    <div className="w-20 h-20 bg-[var(--color-primary)]/10 rounded-full flex items-center justify-center mx-auto mb-4 text-[var(--color-primary)]">
                         <Grid size={40} />
                     </div>
                     <h3 className="text-2xl font-bold mb-2 text-gray-900">
                         {t('menu', 'switchModuleTitle')}
                     </h3>
-                    <p className="text-gray-400">
+                    <p className="text-gray-500">
                         {t('menu', 'switchModuleMessage')}
                     </p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 relative z-10">
                     <button
                         onClick={() => setIsModuleConfirmOpen(false)}
-                        className="py-3 px-4 rounded-xl font-bold transition-colors border text-gray-600 hover:bg-gray-50 border-gray-200"
+                        className="py-3 px-4 rounded-[10px] font-bold transition-colors border text-gray-600 hover:bg-gray-50 border-gray-200"
                     >
                         {t('menu', 'cancel')}
                     </button>
@@ -415,7 +391,7 @@ const Layout = () => {
                             setIsModuleConfirmOpen(false);
                             navigate('/modules');
                         }}
-                        className="py-3 px-4 rounded-xl font-bold text-white bg-brand-primary hover:bg-brand-secondary shadow-lg shadow-brand-primary/20 transition-all hover:scale-105"
+                        className="py-3 px-4 rounded-[10px] font-bold text-white bg-[var(--color-primary)] hover:opacity-90 transition-all"
                     >
                         {t('menu', 'confirm')}
                     </button>
