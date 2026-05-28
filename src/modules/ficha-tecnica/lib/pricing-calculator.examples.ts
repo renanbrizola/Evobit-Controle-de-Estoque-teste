@@ -1,88 +1,101 @@
 import {
+  normalizePercentage,
   calculateIngredientCost,
   calculateRecipeTotalCosts,
   calculateSuggestedPrice,
+  simulatePricingScenarios,
 } from './pricing-calculator';
 
 /**
- * Este arquivo serve como Validação Manual das Fórmulas baseadas em cenários previsíveis.
- * Ele não é executado em runtime no navegador, mas serve para testes unitários ou consultas.
+ * Validação Matemática, Casos-Limite e Contrato de Erros
  */
 
 export function runPricingCalculatorExamples() {
-  console.log('--- INICIANDO TESTES DO PRICING CALCULATOR ---\n');
+  console.log('--- INICIANDO TESTES DO PRICING CALCULATOR (FASE 2.6B) ---\n');
 
   // ==========================================
-  // CENÁRIO 1: INGREDIENTE SIMPLES
+  // A) PERCENTUAIS
   // ==========================================
-  const ingResult = calculateIngredientCost({
-    netQuantity: 0.1, // 100g líquidos (0.1 kg)
-    correctionFactor: 1.10, // 10% de perda no corte
-    unitPrice: 20, // R$ 20/kg
-    yieldFactor: 1, // Não perde no cozimento
-  });
-  
-  // (0.1 * 1.10) / 1 * 20 = 0.11 * 20 = 2.20
-  console.log('CENÁRIO 1: Ingrediente Simples');
-  console.log(`Custo Esperado: R$ 2.20`);
-  console.log(`Custo Retornado: R$ ${ingResult.toFixed(2)}`);
-  console.log(ingResult === 2.2 ? '✅ PASSOU\n' : '❌ FALHOU\n');
+  console.log('--- A) PERCENTUAIS ---');
+  const p1 = normalizePercentage(20, 'percent') === 0.2;
+  const p2 = normalizePercentage(0.2, 'decimal') === 0.2;
+  const p3 = normalizePercentage(20, 'auto') === 0.2;
+  const p4 = normalizePercentage(1, 'percent') === 0.01;
+  const p5 = normalizePercentage(1, 'decimal') === 1;
+
+  console.log(`20 (percent) -> 0.2: ${p1 ? '✅' : '❌'}`);
+  console.log(`0.2 (decimal) -> 0.2: ${p2 ? '✅' : '❌'}`);
+  console.log(`20 (auto) -> 0.2: ${p3 ? '✅' : '❌'}`);
+  console.log(`1 (percent) -> 0.01: ${p4 ? '✅' : '❌'}`);
+  console.log(`1 (decimal) -> 1: ${p5 ? '✅' : '❌'}\n`);
 
   // ==========================================
-  // CENÁRIO 2: RECEITA SIMPLES (Agregação e Unitário)
+  // B) PRECIFICAÇÃO VIÁVEL
   // ==========================================
-  const recipeResult = calculateRecipeTotalCosts({
-    ingredients: [
-      { netQuantity: 1, unitPrice: 20 }, // R$ 20
-      { netQuantity: 2, unitPrice: 10 }, // R$ 20
-    ],
-    packagings: [
-      { quantity: 10, unitPrice: 0.5 }, // R$ 5
-    ],
-    laborEntries: [
-      { minutesUsed: 60, monthlySalary: 1320, monthlyHours: 220 }, // 1h. 1320 / (220*60) = 0.1/min = R$ 6
-    ],
-    equipmentEntries: [
-      { hoursUsed: 1, consumptionPerHour: 2, utilityRate: 0.5 }, // 1 * 2 * 0.5 = R$ 1
-    ],
-    yieldQuantity: 10,
-  });
-
-  // Total Batch: 20+20 + 5 + 6 + 1 = 52.
-  // Wait, let's recalculate labor: 1320 / (220*60) = 1320 / 13200 = 0.10. 0.10 * 60 = 6.00.
-  // Total Batch: 40 + 5 + 6 + 1 = 52.
-  // Unit Cost: 52 / 10 = 5.20.
-  console.log('CENÁRIO 2: Receita Simples');
-  console.log(`Custo Lote Esperado: R$ 52.00 | Retornado: R$ ${recipeResult.totalBatchCost.toFixed(2)}`);
-  console.log(`Custo Unit Esperado: R$ 5.20 | Retornado: R$ ${recipeResult.unitCost.toFixed(2)}`);
-  console.log(recipeResult.unitCost === 5.2 ? '✅ PASSOU\n' : '❌ FALHOU\n');
-
-  // ==========================================
-  // CENÁRIO 3: PRECIFICAÇÃO (Markup e Margem)
-  // ==========================================
-  // custo unitário = 5, variaveis = 10%, margem = 40%
-  // 5 / (1 - 0.10 - 0.40) = 5 / 0.5 = 10
-  const pricingResult = calculateSuggestedPrice({
+  console.log('--- B) PRECIFICAÇÃO VIÁVEL ---');
+  const viable = calculateSuggestedPrice({
     unitCost: 5,
-    taxPercent: 10, // 10%
-    targetMarginPercent: 40, // 40%
+    taxPercent: 10,
+    targetMarginPercent: 40,
+    percentageMode: 'percent', // Interpreta 10 como 10%, etc.
   });
-
-  console.log('CENÁRIO 3: Precificação');
-  console.log(`Preço Esperado: R$ 10.00 | Retornado: R$ ${pricingResult.toFixed(2)}`);
-  console.log(pricingResult === 10 ? '✅ PASSOU\n' : '❌ FALHOU\n');
+  console.log(`Preço Esperado 10 | Retornado: ${viable.suggestedPrice}`);
+  console.log(`Cenário Viável: ${viable.isViable}`);
+  console.log(viable.isViable && viable.suggestedPrice === 10 ? '✅ PASSOU\n' : '❌ FALHOU\n');
 
   // ==========================================
-  // CENÁRIO 4: PROTEÇÃO DIVISÃO POR ZERO E NEGATIVOS
+  // C) PRECIFICAÇÃO INVIÁVEL
   // ==========================================
-  const pricingZero = calculateSuggestedPrice({
+  console.log('--- C) PRECIFICAÇÃO INVIÁVEL ---');
+  const unviable = calculateSuggestedPrice({
     unitCost: 5,
-    taxPercent: 50, // 50%
-    targetMarginPercent: 60, // 60%
-    // Total = 110%, denominador negativo! Deve retornar 0.
+    taxPercent: 60, // + 50% margem = 110%
+    targetMarginPercent: 50,
+    percentageMode: 'percent',
   });
+  console.log(`Viável: ${unviable.isViable} | Motivo: ${unviable.reason}`);
+  console.log(!unviable.isViable && unviable.reason === 'VARIABLE_COSTS_AND_MARGIN_EXCEED_100_PERCENT' ? '✅ PASSOU\n' : '❌ FALHOU\n');
 
-  console.log('CENÁRIO 4: Proteção Divisão Negativa');
-  console.log(`Preço Esperado (Inviável): R$ 0.00 | Retornado: R$ ${pricingZero.toFixed(2)}`);
-  console.log(pricingZero === 0 ? '✅ PASSOU\n' : '❌ FALHOU\n');
+  // ==========================================
+  // D) RENDIMENTO INVÁLIDO
+  // ==========================================
+  console.log('--- D) RENDIMENTO INVÁLIDO ---');
+  const zeroYield = calculateRecipeTotalCosts({
+    ingredients: [{ netQuantity: 1, unitPrice: 10 }],
+    packagings: [],
+    laborEntries: [],
+    equipmentEntries: [],
+    yieldQuantity: 0,
+  });
+  console.log(`Custo Lote: ${zeroYield.totalBatchCost} | Custo Unitário: ${zeroYield.unitCost}`);
+  console.log(`Viável: ${zeroYield.isYieldViable} | Motivo: ${zeroYield.yieldReason}`);
+  console.log(!zeroYield.isYieldViable && zeroYield.yieldReason === 'INVALID_YIELD' ? '✅ PASSOU\n' : '❌ FALHOU\n');
+
+  // ==========================================
+  // E) CUSTO UNITÁRIO INVÁLIDO
+  // ==========================================
+  console.log('--- E) CUSTO UNITÁRIO INVÁLIDO ---');
+  const zeroUnitCost = calculateSuggestedPrice({
+    unitCost: 0,
+    taxPercent: 10,
+    targetMarginPercent: 40,
+    percentageMode: 'percent',
+  });
+  console.log(`Viável: ${zeroUnitCost.isViable} | Motivo: ${zeroUnitCost.reason}`);
+  console.log(!zeroUnitCost.isViable && zeroUnitCost.reason === 'INVALID_UNIT_COST' ? '✅ PASSOU\n' : '❌ FALHOU\n');
+
+  // ==========================================
+  // F) SIMULATE SCENARIOS CONTRACT
+  // ==========================================
+  console.log('--- F) SIMULAÇÃO COM CONTRATO DE ERROS ---');
+  const sim = simulatePricingScenarios({
+    unitCost: 5,
+    cardFeePercent: 10,
+    targetMarginPercent: 50,
+    percentageMode: 'percent' // 5 / (1 - 0.10 - 0.50) = 5 / 0.40 = 12.50
+  });
+  console.log(`Sugerido: ${sim.suggestedPrice} | Mínimo: ${sim.minimumViablePrice}`);
+  console.log(`Margem (valor): ${sim.marginValue} | Markup: ${sim.markupFactor}`);
+  console.log(`CMV%: ${sim.cmvPercent}`);
+  console.log(sim.isViable && sim.suggestedPrice === 12.5 ? '✅ PASSOU\n' : '❌ FALHOU\n');
 }

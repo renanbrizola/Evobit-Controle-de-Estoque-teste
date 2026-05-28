@@ -6,7 +6,25 @@
  */
 
 // ==========================================
-// 1. HELPERS E ARREDONDAMENTOS
+// 1. ERROS E CONTRATOS
+// ==========================================
+
+export type PricingErrorCode =
+  | 'INVALID_UNIT_COST'
+  | 'INVALID_YIELD'
+  | 'INVALID_MONTHLY_HOURS'
+  | 'VARIABLE_COSTS_AND_MARGIN_EXCEED_100_PERCENT'
+  | 'ZERO_OR_NEGATIVE_DENOMINATOR';
+
+export interface SuggestedPriceResult {
+  suggestedPrice: number;
+  isViable: boolean;
+  reason?: PricingErrorCode;
+  denominator?: number;
+}
+
+// ==========================================
+// 2. HELPERS E ARREDONDAMENTOS
 // ==========================================
 
 const COST_DECIMALS = 4;
@@ -26,13 +44,21 @@ export function roundCurrency(value: number): number {
   return Math.round(value * Math.pow(10, PRICE_DECIMALS)) / Math.pow(10, PRICE_DECIMALS);
 }
 
+export type PercentageMode = 'decimal' | 'percent' | 'auto';
+
 /**
  * Normaliza um percentual para fração decimal.
- * Ex: Se vier 20, vira 0.20. Se vier 0.20, continua 0.20.
+ * @param value Valor numérico do percentual.
+ * @param mode 'decimal': assume que 0.2 é 20%. 'percent': assume que 20 é 20%. 'auto': tenta adivinhar (>1 é percent).
  */
-export function normalizePercentage(value: number): number {
-  // Assume que se o valor for maior que 1 ou menor que -1, está em escala 0-100.
-  // Tratamento de segurança para aceitar 20% ou 0.2 de forma agnóstica.
+export function normalizePercentage(value: number, mode: PercentageMode = 'auto'): number {
+  if (mode === 'decimal') {
+    return value;
+  }
+  if (mode === 'percent') {
+    return value / 100;
+  }
+  // fallback "auto"
   if (value > 1 || value < -1) {
     return value / 100;
   }
@@ -40,7 +66,7 @@ export function normalizePercentage(value: number): number {
 }
 
 // ==========================================
-// 2. TIPOS DE ENTRADA E SAÍDA
+// 3. TIPOS DE ENTRADA E SAÍDA
 // ==========================================
 
 export interface IngredientParams {
@@ -84,6 +110,7 @@ export interface PricingParams {
   commissionPercent?: number;  // Comissões (%)
   taxPercent?: number;         // Impostos (%)
   operationalCostPercent?: number; // Rateio de custos fixos (%)
+  percentageMode?: PercentageMode; // Modo de interpretação dos percentuais (padrão: 'auto')
 }
 
 export interface PricingSimulationResult {
@@ -92,11 +119,13 @@ export interface PricingSimulationResult {
   marginValue: number;
   markupFactor: number;
   cmvPercent: number; // Custo de Mercadoria Vendida em %
+  totalVariablePercent: number; // Soma de todos os percentuais variáveis (cartão, taxa, etc)
   isViable: boolean;
+  reason?: PricingErrorCode;
 }
 
 // ==========================================
-// 3. CÁLCULO DE CUSTOS DE INSUMOS
+// 4. CÁLCULO DE CUSTOS DE INSUMOS
 // ==========================================
 
 export function calculateIngredientGrossQuantity(params: IngredientParams): number {
@@ -109,7 +138,6 @@ export function calculateIngredientCost(params: IngredientParams): number {
   const grossQuantity = calculateIngredientGrossQuantity(params);
   const effectiveYield = yieldFactor > 0 ? yieldFactor : 1; // Evita divisão por zero
   
-  // O custo considera a quantidade bruta dividida pelo fator de rendimento do ingrediente.
   return roundCost((grossQuantity / effectiveYield) * unitPrice);
 }
 
@@ -118,14 +146,18 @@ export function calculatePackagingCost(params: PackagingParams): number {
 }
 
 // ==========================================
-// 4. CÁLCULO DE MÃO DE OBRA E EQUIPAMENTOS
+// 5. CÁLCULO DE MÃO DE OBRA E EQUIPAMENTOS
 // ==========================================
 
 export function calculateLaborCost(params: LaborParams): number {
   const { minutesUsed, monthlySalary, monthlyHours = 220 } = params;
-  const safeHours = monthlyHours > 0 ? monthlyHours : 220; // Previne divisão por zero
-  const costPerMinute = monthlySalary / (safeHours * 60);
   
+  if (monthlyHours <= 0) {
+    // Retorna 0 em caso de horas inválidas para evitar infinity
+    return 0;
+  }
+  
+  const costPerMinute = monthlySalary / (monthlyHours * 60);
   return roundCost(costPerMinute * minutesUsed);
 }
 
@@ -135,7 +167,7 @@ export function calculateEquipmentCost(params: EquipmentParams): number {
 }
 
 // ==========================================
-// 5. CÁLCULOS AGREGADOS (LOTE E UNITÁRIO)
+// 6. CÁLCULOS AGREGADOS (LOTE E UNITÁRIO)
 // ==========================================
 
 export function calculateRecipeTotalCosts(params: RecipeTotalParams) {
@@ -148,7 +180,7 @@ export function calculateRecipeTotalCosts(params: RecipeTotalParams) {
     totalIngredientsCost + totalPackagingCost + totalLaborCost + totalEquipmentCost
   );
 
-  const unitCost = calculateUnitCost(totalBatchCost, params.yieldQuantity);
+  const unitCostResult = calculateUnitCost(totalBatchCost, params.yieldQuantity);
 
   return {
     totalIngredientsCost: roundCurrency(totalIngredientsCost),
@@ -156,20 +188,24 @@ export function calculateRecipeTotalCosts(params: RecipeTotalParams) {
     totalLaborCost: roundCurrency(totalLaborCost),
     totalEquipmentCost: roundCurrency(totalEquipmentCost),
     totalBatchCost,
-    unitCost,
+    unitCost: unitCostResult.unitCost,
+    isYieldViable: unitCostResult.isViable,
+    yieldReason: unitCostResult.reason,
   };
 }
 
-export function calculateUnitCost(totalBatchCost: number, yieldQuantity: number): number {
-  if (yieldQuantity <= 0) return 0; // Proteção contra divisão por zero
-  return roundCurrency(totalBatchCost / yieldQuantity);
+export function calculateUnitCost(totalBatchCost: number, yieldQuantity: number): { unitCost: number, isViable: boolean, reason?: PricingErrorCode } {
+  if (yieldQuantity <= 0) {
+    return { unitCost: 0, isViable: false, reason: 'INVALID_YIELD' };
+  }
+  return { unitCost: roundCost(totalBatchCost / yieldQuantity), isViable: true };
 }
 
 // ==========================================
-// 6. PRECIFICAÇÃO E MARGENS
+// 7. PRECIFICAÇÃO E MARGENS
 // ==========================================
 
-export function calculateSuggestedPrice(params: PricingParams): number {
+export function calculateSuggestedPrice(params: PricingParams): SuggestedPriceResult {
   const {
     unitCost,
     targetMarginPercent,
@@ -178,70 +214,83 @@ export function calculateSuggestedPrice(params: PricingParams): number {
     commissionPercent = 0,
     taxPercent = 0,
     operationalCostPercent = 0,
+    percentageMode = 'auto',
   } = params;
 
-  const totalVariableFraction =
-    normalizePercentage(cardFeePercent) +
-    normalizePercentage(deliveryFeePercent) +
-    normalizePercentage(commissionPercent) +
-    normalizePercentage(taxPercent) +
-    normalizePercentage(operationalCostPercent);
+  if (unitCost <= 0) {
+    return { suggestedPrice: 0, isViable: false, reason: 'INVALID_UNIT_COST' };
+  }
 
-  const marginFraction = normalizePercentage(targetMarginPercent);
+  const totalVariableFraction =
+    normalizePercentage(cardFeePercent, percentageMode) +
+    normalizePercentage(deliveryFeePercent, percentageMode) +
+    normalizePercentage(commissionPercent, percentageMode) +
+    normalizePercentage(taxPercent, percentageMode) +
+    normalizePercentage(operationalCostPercent, percentageMode);
+
+  const marginFraction = normalizePercentage(targetMarginPercent, percentageMode);
 
   // Price = Cost / (1 - Custos Variáveis - Margem)
   const denominator = 1 - totalVariableFraction - marginFraction;
 
   if (denominator <= 0) {
-    // Retorna 0 para evitar Infinity ou números negativos caso os impostos+margem ultrapassem 100%
-    return 0;
+    return {
+      suggestedPrice: 0,
+      isViable: false,
+      reason: 'VARIABLE_COSTS_AND_MARGIN_EXCEED_100_PERCENT',
+      denominator,
+    };
   }
 
-  return roundCurrency(unitCost / denominator);
+  return {
+    suggestedPrice: roundCurrency(unitCost / denominator),
+    isViable: true,
+    denominator,
+  };
 }
 
 export function calculateMarkupFactor(suggestedPrice: number, unitCost: number): number {
   if (unitCost <= 0) return 0;
-  return roundCurrency(suggestedPrice / unitCost);
+  return roundCost(suggestedPrice / unitCost);
 }
 
-export function calculateRealMargin(finalPrice: number, unitCost: number, totalVariablePercent: number): number {
+export function calculateRealMargin(finalPrice: number, unitCost: number, totalVariableFraction: number): number {
   if (finalPrice <= 0) return 0;
-  
-  const totalVariableFraction = normalizePercentage(totalVariablePercent);
   const variableCostsValue = finalPrice * totalVariableFraction;
-  
   const marginValue = finalPrice - unitCost - variableCostsValue;
-  return roundCurrency(marginValue / finalPrice); // Retorna em fração (0-1)
+  return roundCost(marginValue / finalPrice); // Retorna em fração (0-1)
 }
 
 export function simulatePricingScenarios(params: PricingParams): PricingSimulationResult {
-  const suggestedPrice = calculateSuggestedPrice(params);
+  const { percentageMode = 'auto' } = params;
+  
+  const suggestedPriceResult = calculateSuggestedPrice(params);
 
   // Calcula Preço Mínimo (Se margem fosse 0)
   const minParams = { ...params, targetMarginPercent: 0 };
-  const minimumViablePrice = calculateSuggestedPrice(minParams);
-
-  // Se o denominador da margem foi < 0 e o preço sugerido zerou, a receita é inviável
-  const isViable = suggestedPrice > 0 && suggestedPrice >= minimumViablePrice;
+  const minimumViablePriceResult = calculateSuggestedPrice(minParams);
 
   const totalVariableFraction =
-    normalizePercentage(params.cardFeePercent ?? 0) +
-    normalizePercentage(params.deliveryFeePercent ?? 0) +
-    normalizePercentage(params.commissionPercent ?? 0) +
-    normalizePercentage(params.taxPercent ?? 0) +
-    normalizePercentage(params.operationalCostPercent ?? 0);
+    normalizePercentage(params.cardFeePercent ?? 0, percentageMode) +
+    normalizePercentage(params.deliveryFeePercent ?? 0, percentageMode) +
+    normalizePercentage(params.commissionPercent ?? 0, percentageMode) +
+    normalizePercentage(params.taxPercent ?? 0, percentageMode) +
+    normalizePercentage(params.operationalCostPercent ?? 0, percentageMode);
 
-  const marginValue = isViable ? roundCurrency(suggestedPrice * normalizePercentage(params.targetMarginPercent)) : 0;
-  const markupFactor = isViable ? calculateMarkupFactor(suggestedPrice, params.unitCost) : 0;
-  const cmvPercent = isViable ? roundCurrency(params.unitCost / suggestedPrice) : 0; // Custo dividido por Venda
+  const isViable = suggestedPriceResult.isViable;
+  
+  const marginValue = isViable ? roundCurrency(suggestedPriceResult.suggestedPrice * normalizePercentage(params.targetMarginPercent, percentageMode)) : 0;
+  const markupFactor = isViable ? calculateMarkupFactor(suggestedPriceResult.suggestedPrice, params.unitCost) : 0;
+  const cmvPercent = isViable && suggestedPriceResult.suggestedPrice > 0 ? roundCost(params.unitCost / suggestedPriceResult.suggestedPrice) : 0;
 
   return {
-    suggestedPrice,
-    minimumViablePrice,
+    suggestedPrice: suggestedPriceResult.suggestedPrice,
+    minimumViablePrice: minimumViablePriceResult.suggestedPrice,
     marginValue,
     markupFactor,
     cmvPercent,
+    totalVariablePercent: totalVariableFraction, // Retorna em fração
     isViable,
+    reason: suggestedPriceResult.reason,
   };
 }
