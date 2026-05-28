@@ -2,6 +2,7 @@
 
 import { StockMovementType } from '../types/enums';
 import api from '../lib/api';
+import { api as realApi } from '../../../services/api';
 
 export interface InventoryFormPayload {
   name: string;
@@ -111,13 +112,18 @@ export interface InventoryCatalogItem {
 }
 
 export async function listUoms() {
-  const response = await api.get<{ success: boolean; data: Array<{ id: string; name: string; abbreviation: string; type: string; conversionFactor: number }> }>('/uom');
-  return response.data.data;
+  return [
+    { id: 'UN', name: 'Unidade', abbreviation: 'UN', type: 'COUNT', conversionFactor: 1 },
+    { id: 'KG', name: 'Quilograma', abbreviation: 'KG', type: 'WEIGHT', conversionFactor: 1 },
+    { id: 'G', name: 'Grama', abbreviation: 'G', type: 'WEIGHT', conversionFactor: 0.001 },
+    { id: 'L', name: 'Litro', abbreviation: 'L', type: 'VOLUME', conversionFactor: 1 },
+    { id: 'ML', name: 'Mililitro', abbreviation: 'ML', type: 'VOLUME', conversionFactor: 0.001 }
+  ];
 }
 
 export async function listCategories() {
-  const response = await api.get<{ success: boolean; data: Array<{ id: string; name: string }> }>('/categories');
-  return response.data.data;
+  const docs = await realApi.categories.list();
+  return docs.map((d: any) => ({ id: d.id, name: d.name }));
 }
 
 export async function listSuppliers() {

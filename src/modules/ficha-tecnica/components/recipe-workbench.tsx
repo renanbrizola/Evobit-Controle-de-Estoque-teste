@@ -48,6 +48,7 @@ import { StepForm } from '../components/step-form';
 import { RecipeYieldFields } from '../components/recipe-yield-fields';
 import { RecipeCategoryField } from '../components/recipe-category-field';
 import { RecipeNameField } from '../components/recipe-name-field';
+import { RecipeProductField } from '../components/recipe-product-field';
 import { RecipeDescriptionField } from '../components/recipe-description-field';
 import { IngredientForm } from '../components/ingredient-form';
 import { IngredientCombobox } from '../components/ingredient-combobox';
@@ -76,6 +77,7 @@ import {
   deleteRecipeStep,
   getRecipe,
   listRecipes,
+  listProducts,
   recalculateRecipeVersion,
   submitRecipeVersion,
   type RecipeDetail,
@@ -97,6 +99,7 @@ import { useAuthStore } from '../mock/auth.store';
 
 const emptyRecipeForm = {
   name: '',
+  finishedProductId: '',
   description: '',
   categoryId: '',
   yieldQuantity: 1,
@@ -183,6 +186,7 @@ function toRecipeForm(recipe: RecipeDetail) {
 
   return {
     name: recipe.name,
+    finishedProductId: recipe.finished_product_id || '',
     description: recipe.description ?? '',
     categoryId: recipe.categoryId ?? '',
     yieldQuantity: version?.yieldQuantity ?? 1,
@@ -236,6 +240,9 @@ export function RecipeWorkbench({
     Array<{ id: string; name: string; abbreviation: string }>
   >([]);
   const [categories, setCategories] = useState<
+    Array<{ id: string; name: string }>
+  >([]);
+  const [products, setProducts] = useState<
     Array<{ id: string; name: string }>
   >([]);
   const [subRecipes, setSubRecipes] = useState<
@@ -311,16 +318,18 @@ export function RecipeWorkbench({
     try {
       setLoading(true);
       setMessage(null);
-      const [uomData, categoryData, recipeData, subRecipeData] =
+      const [uomData, categoryData, recipeData, subRecipeData, productsData] =
         await Promise.all([
           listUoms(),
           listCategories(),
           listRecipes(productType),
           listRecipes(ProductType.SUB_RECEITA),
+          listProducts(),
         ]);
 
       setUoms(uomData);
       setCategories(categoryData);
+      setProducts(productsData);
       setRecipes(recipeData);
       setSubRecipes(
         subRecipeData.map((recipe) => ({ id: recipe.id, name: recipe.name })),
@@ -406,6 +415,7 @@ export function RecipeWorkbench({
 
     return {
       name: recipeForm.name,
+      finishedProductId: recipeForm.finishedProductId,
       productType,
       description: recipeForm.description || undefined,
       categoryId: recipeForm.categoryId || undefined,
@@ -1331,11 +1341,23 @@ export function RecipeWorkbench({
                 {productStage === 'nome' ? (
                   <div className="max-w-3xl space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
+                      <RecipeProductField
+                        value={recipeForm.finishedProductId || ''}
+                        onChange={(finishedProductId, selectedName) => {
+                          setRecipeForm((current) => ({
+                            ...current,
+                            finishedProductId,
+                            name: current.name || selectedName
+                          }));
+                        }}
+                        products={products}
+                        disabled={loading || isDemoSession}
+                      />
                       <RecipeNameField
                         value={recipeForm.name}
                         onChange={(name) => setRecipeForm((current) => ({ ...current, name }))}
                         disabled={loading || isDemoSession}
-                        label="Nome do produto"
+                        label="Nome da ficha (opcional)"
                       />
                       <RecipeCategoryField
                         categoryId={recipeForm.categoryId}
@@ -1356,7 +1378,7 @@ export function RecipeWorkbench({
                       disabled={
                         loading ||
                         isDemoSession ||
-                        !recipeForm.name ||
+                        !recipeForm.finishedProductId ||
                         (!editingRecipeId && !defaultCompoundYieldUomId)
                       }
                     >
@@ -1530,163 +1552,20 @@ export function RecipeWorkbench({
                 ) : null}
 
                 {currentVersion && productStage === 'embalagens' ? (
-                  <div className="space-y-4">
-                    <PackagingForm
-                      form={packagingForm}
-                      onChange={(updates) => setPackagingForm((current) => ({ ...current, ...updates }))}
-                      onSubmit={() => void handlePackagingSubmit()}
-                      onCancel={() => {
-                        setPackagingForm(emptyPackagingForm);
-                        setPackagingEditingId(null);
-                      }}
-                      isEditing={Boolean(packagingEditingId)}
-                      isEditable={isEditableVersion}
-                      loading={loading}
-                    />
-                    <RecipeTable
-                      columns={['Nome', 'Qtd.', 'Custo', 'Ações']}
-                      rows={currentVersion.packagings.map((row) => [
-                        row.name,
-                        Number(row.quantity).toLocaleString('pt-BR'),
-                        formatBRL(Number(row.unitCost)),
-                        <div key={row.id} className="flex flex-wrap gap-2">
-                          <ActionButton
-                            tone="secondary"
-                            className="px-3 py-2 text-xs"
-                            onClick={() => {
-                              setPackagingEditingId(row.id);
-                              setPackagingForm({
-                                name: row.name,
-                                quantity: Number(row.quantity),
-                                unitCost: Number(row.unitCost),
-                              });
-                            }}
-                          >
-                            Alterar
-                          </ActionButton>
-                          <ActionButton
-                            tone="danger"
-                            className="px-3 py-2 text-xs"
-                            onClick={() =>
-                              void handleDelete('packaging', row.id)
-                            }
-                            disabled={!isEditableVersion || loading}
-                          >
-                            Excluir
-                          </ActionButton>
-                        </div>,
-                      ])}
-                    />
+                  <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+                    <p className="text-sm font-medium text-slate-500">O módulo de embalagens estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
                   </div>
                 ) : null}
 
                 {currentVersion && productStage === 'mao-de-obra' ? (
-                  <div className="space-y-4">
-                    <LaborForm
-                      form={laborForm}
-                      onChange={(updates) => setLaborForm((current) => ({ ...current, ...updates }))}
-                      onSubmit={() => void handleLaborSubmit()}
-                      onCancel={() => {
-                        setLaborForm(emptyLaborForm);
-                        setLaborEditingId(null);
-                      }}
-                      isEditing={Boolean(laborEditingId)}
-                      isEditable={isEditableVersion}
-                      loading={loading}
-                      salaryLabel="Custo mensal"
-                    />
-                    <RecipeTable
-                      columns={['Função', 'Min.', 'Custo mensal', 'Ações']}
-                      rows={currentVersion.laborEntries.map((row) => [
-                        row.role,
-                        row.minutes,
-                        formatBRL(Number(row.monthlySalary)),
-                        <div key={row.id} className="flex flex-wrap gap-2">
-                          <ActionButton
-                            tone="secondary"
-                            className="px-3 py-2 text-xs"
-                            onClick={() => {
-                              setLaborEditingId(row.id);
-                              setLaborForm({
-                                role: row.role,
-                                minutes: row.minutes,
-                                monthlySalary: Number(row.monthlySalary),
-                                monthlyHours: row.monthlyHours,
-                              });
-                            }}
-                          >
-                            Alterar
-                          </ActionButton>
-                          <ActionButton
-                            tone="danger"
-                            className="px-3 py-2 text-xs"
-                            onClick={() => void handleDelete('labor', row.id)}
-                            disabled={!isEditableVersion || loading}
-                          >
-                            Excluir
-                          </ActionButton>
-                        </div>,
-                      ])}
-                    />
+                  <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+                    <p className="text-sm font-medium text-slate-500">O módulo de mão de obra estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
                   </div>
                 ) : null}
 
                 {currentVersion && productStage === 'equipamentos' ? (
-                  <div className="space-y-4">
-                    <EquipmentForm
-                      form={equipmentForm}
-                      onChange={(updates) => setEquipmentForm((current) => ({ ...current, ...updates }))}
-                      onSubmit={() => void handleEquipmentSubmit()}
-                      onCancel={() => {
-                        setEquipmentForm(emptyEquipmentForm);
-                        setEquipmentEditingId(null);
-                      }}
-                      isEditing={Boolean(equipmentEditingId)}
-                      isEditable={isEditableVersion}
-                      loading={loading}
-                      gridClassName="grid gap-4 md:grid-cols-2 xl:grid-cols-5"
-                      hoursLabel="Horas"
-                      consumptionLabel="Consumo/h"
-                      utilityRateLabel="Tarifa"
-                    />
-                    <RecipeTable
-                      columns={['Equipamento', 'Tipo', 'Horas', 'Ações']}
-                      rows={currentVersion.equipmentEntries.map((row) => [
-                        row.name,
-                        row.type,
-                        Number(row.hoursUsed).toLocaleString('pt-BR'),
-                        <div key={row.id} className="flex flex-wrap gap-2">
-                          <ActionButton
-                            tone="secondary"
-                            className="px-3 py-2 text-xs"
-                            onClick={() => {
-                              setEquipmentEditingId(row.id);
-                              setEquipmentForm({
-                                name: row.name,
-                                type: row.type,
-                                hoursUsed: Number(row.hoursUsed),
-                                consumptionPerHour: Number(
-                                  row.consumptionPerHour,
-                                ),
-                                utilityRate: Number(row.utilityRate),
-                              });
-                            }}
-                          >
-                            Alterar
-                          </ActionButton>
-                          <ActionButton
-                            tone="danger"
-                            className="px-3 py-2 text-xs"
-                            onClick={() =>
-                              void handleDelete('equipment', row.id)
-                            }
-                            disabled={!isEditableVersion || loading}
-                          >
-                            Excluir
-                          </ActionButton>
-                        </div>,
-                      ])}
-                    />
+                  <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+                    <p className="text-sm font-medium text-slate-500">O módulo de equipamentos estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
                   </div>
                 ) : null}
               </div>
@@ -2091,11 +1970,23 @@ export function RecipeWorkbench({
             {activeCompoundStage === 'nome' ? (
               <EditorCard title={`1. Nome ${entityArticle} ${entityLabel}`}>
                 <div className="max-w-2xl space-y-4">
+                  <RecipeProductField
+                    value={recipeForm.finishedProductId || ''}
+                    onChange={(finishedProductId, selectedName) => {
+                      setRecipeForm((current) => ({
+                        ...current,
+                        finishedProductId,
+                        name: current.name || selectedName
+                      }));
+                    }}
+                    products={products}
+                    disabled={loading || isDemoSession}
+                  />
                   <RecipeNameField
                     value={recipeForm.name}
                     onChange={(name) => setRecipeForm((current) => ({ ...current, name }))}
                     disabled={loading || isDemoSession}
-                    label={`Nome ${entityArticle} ${entityLabel}`}
+                    label={`Nome Interno (Opcional)`}
                   />
 
                   <div className="flex flex-wrap gap-3">
@@ -2104,7 +1995,7 @@ export function RecipeWorkbench({
                       disabled={
                         loading ||
                         isDemoSession ||
-                        !recipeForm.name ||
+                        !recipeForm.finishedProductId ||
                         (!editingRecipeId && !defaultCompoundYieldUomId)
                       }
                     >
@@ -2331,158 +2222,25 @@ export function RecipeWorkbench({
 
             {currentVersion && activeCompoundStage === 'embalagens' ? (
               <EditorCard title="6. Embalagens">
-                <PackagingForm
-                  form={packagingForm}
-                  onChange={(updates) => setPackagingForm((current) => ({ ...current, ...updates }))}
-                  onSubmit={() => void handlePackagingSubmit()}
-                  onCancel={() => {
-                    setPackagingForm(emptyPackagingForm);
-                    setPackagingEditingId(null);
-                  }}
-                  isEditing={Boolean(packagingEditingId)}
-                  isEditable={isEditableVersion}
-                  loading={loading}
-                />
-
-                <RecipeTable
-                  columns={['Nome', 'Qtd.', 'Custo', 'Ações']}
-                  rows={currentVersion.packagings.map((row) => [
-                    row.name,
-                    Number(row.quantity).toLocaleString('pt-BR'),
-                    formatBRL(Number(row.unitCost)),
-                    <div key={row.id} className="flex flex-wrap gap-2">
-                      <ActionButton
-                        tone="secondary"
-                        className="px-3 py-2 text-xs"
-                        onClick={() => {
-                          setPackagingEditingId(row.id);
-                          setPackagingForm({
-                            name: row.name,
-                            quantity: Number(row.quantity),
-                            unitCost: Number(row.unitCost),
-                          });
-                        }}
-                      >
-                        Editar
-                      </ActionButton>
-                      <ActionButton
-                        tone="danger"
-                        className="px-3 py-2 text-xs"
-                        onClick={() => void handleDelete('packaging', row.id)}
-                        disabled={!isEditableVersion || loading}
-                      >
-                        Excluir
-                      </ActionButton>
-                    </div>,
-                  ])}
-                />
+                <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+                  <p className="text-sm font-medium text-slate-500">O módulo de embalagens estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
+                </div>
               </EditorCard>
             ) : null}
 
             {currentVersion && activeCompoundStage === 'mao-de-obra' ? (
               <EditorCard title="7. Mão de obra">
-                <LaborForm
-                  form={laborForm}
-                  onChange={(updates) => setLaborForm((current) => ({ ...current, ...updates }))}
-                  onSubmit={() => void handleLaborSubmit()}
-                  onCancel={() => {
-                    setLaborForm(emptyLaborForm);
-                    setLaborEditingId(null);
-                  }}
-                  isEditing={Boolean(laborEditingId)}
-                  isEditable={isEditableVersion}
-                  loading={loading}
-                />
-
-                <RecipeTable
-                  columns={['Função', 'Min.', 'Salário', 'Ações']}
-                  rows={currentVersion.laborEntries.map((row) => [
-                    row.role,
-                    row.minutes,
-                    formatBRL(Number(row.monthlySalary)),
-                    <div key={row.id} className="flex flex-wrap gap-2">
-                      <ActionButton
-                        tone="secondary"
-                        className="px-3 py-2 text-xs"
-                        onClick={() => {
-                          setLaborEditingId(row.id);
-                          setLaborForm({
-                            role: row.role,
-                            minutes: row.minutes,
-                            monthlySalary: Number(row.monthlySalary),
-                            monthlyHours: row.monthlyHours,
-                          });
-                        }}
-                      >
-                        Editar
-                      </ActionButton>
-                      <ActionButton
-                        tone="danger"
-                        className="px-3 py-2 text-xs"
-                        onClick={() => void handleDelete('labor', row.id)}
-                        disabled={!isEditableVersion || loading}
-                      >
-                        Excluir
-                      </ActionButton>
-                    </div>,
-                  ])}
-                />
+                <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+                  <p className="text-sm font-medium text-slate-500">O módulo de mão de obra estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
+                </div>
               </EditorCard>
             ) : null}
 
             {currentVersion && activeCompoundStage === 'equipamentos' ? (
               <EditorCard title="8. Equipamentos">
-                <EquipmentForm
-                  form={equipmentForm}
-                  onChange={(updates) => setEquipmentForm((current) => ({ ...current, ...updates }))}
-                  onSubmit={() => void handleEquipmentSubmit()}
-                  onCancel={() => {
-                    setEquipmentForm(emptyEquipmentForm);
-                    setEquipmentEditingId(null);
-                  }}
-                  isEditing={Boolean(equipmentEditingId)}
-                  isEditable={isEditableVersion}
-                  loading={loading}
-                  gridClassName="grid gap-4 md:grid-cols-2"
-                  hoursLabel="Horas de uso"
-                  consumptionLabel="Consumo por hora"
-                  utilityRateLabel="Tarifa utilidade"
-                />
-
-                <RecipeTable
-                  columns={['Equipamento', 'Tipo', 'Horas', 'Ações']}
-                  rows={currentVersion.equipmentEntries.map((row) => [
-                    row.name,
-                    row.type,
-                    Number(row.hoursUsed).toLocaleString('pt-BR'),
-                    <div key={row.id} className="flex flex-wrap gap-2">
-                      <ActionButton
-                        tone="secondary"
-                        className="px-3 py-2 text-xs"
-                        onClick={() => {
-                          setEquipmentEditingId(row.id);
-                          setEquipmentForm({
-                            name: row.name,
-                            type: row.type,
-                            hoursUsed: Number(row.hoursUsed),
-                            consumptionPerHour: Number(row.consumptionPerHour),
-                            utilityRate: Number(row.utilityRate),
-                          });
-                        }}
-                      >
-                        Editar
-                      </ActionButton>
-                      <ActionButton
-                        tone="danger"
-                        className="px-3 py-2 text-xs"
-                        onClick={() => void handleDelete('equipment', row.id)}
-                        disabled={!isEditableVersion || loading}
-                      >
-                        Excluir
-                      </ActionButton>
-                    </div>,
-                  ])}
-                />
+                <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
+                  <p className="text-sm font-medium text-slate-500">O módulo de equipamentos estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
+                </div>
               </EditorCard>
             ) : null}
           </div>
@@ -2697,11 +2455,23 @@ export function RecipeWorkbench({
           ) : null}
 
           <div className="grid gap-4 md:grid-cols-2">
+            <RecipeProductField
+              value={recipeForm.finishedProductId || ''}
+              onChange={(finishedProductId, selectedName) => {
+                setRecipeForm((current) => ({
+                  ...current,
+                  finishedProductId,
+                  name: current.name || selectedName
+                }));
+              }}
+              products={products}
+              disabled={loading || isDemoSession}
+            />
             <RecipeNameField
               value={recipeForm.name}
               onChange={(name) => setRecipeForm((current) => ({ ...current, name }))}
               disabled={loading || isDemoSession}
-              label="Nome"
+              label="Nome Interno (Opcional)"
             />
             <RecipeCategoryField
               categoryId={recipeForm.categoryId}
