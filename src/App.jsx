@@ -42,6 +42,7 @@ import FinanceDashboard from './pages/FinanceDashboard';
 import Reports from './pages/Reports';
 import SectionErrorBoundary from './components/shared/SectionErrorBoundary';
 import OfflineIndicator from './components/shared/OfflineIndicator';
+import TechnicalSheetDashboard from './pages/TechnicalSheet/Dashboard';
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
@@ -160,7 +161,7 @@ function App() {
                         {/* FICHA TÉCNICA MODULE */}
                         <Route element={<ModuleGuard requiredModule="technical_sheet" />}>
                           <Route path="ficha-tecnica">
-                            <Route path="dashboard" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
+                            <Route path="dashboard" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetDashboard /></SectionErrorBoundary>} />
                             <Route path="insumos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
                             <Route path="fichas" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
                             <Route path="equipamentos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />

@@ -20,7 +20,7 @@ import {
   pricingRows,
   staffRows,
   variableExpenses,
-} from '../lib/technical-sheet-data';
+} from '../mock/technical-sheet-data';
 
 function average(values: number[]): number {
   return values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
