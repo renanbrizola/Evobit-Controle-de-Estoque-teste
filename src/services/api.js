@@ -709,4 +709,133 @@ export const api = {
             if (error) throw error;
         }
     },
+
+    // RECIPES / FICHA TÉCNICA
+    recipes: {
+        list: async () => {
+            const db = await getDatabase();
+            if (!db) return [];
+
+            const docs = await db.recipes.find().exec();
+            const jsonDocs = docs.map(doc => doc.toJSON());
+
+            // Retornar apenas receitas não deletadas
+            return jsonDocs.filter(doc => !doc.deleted_at);
+        },
+        getById: async (id) => {
+            if (!id) return null;
+            const db = await getDatabase();
+            if (!db) return null;
+
+            const doc = await db.recipes.findOne({ selector: { id } }).exec();
+            if (!doc || doc.deleted_at) return null;
+
+            return doc.toJSON();
+        },
+        create: async (payload) => {
+            const user = await getCurrentUser();
+            if (!user || !user.id) {
+                throw new Error('Usuário não autenticado. O ID do usuário é obrigatório para criar uma receita.');
+            }
+
+            if (!payload.finished_product_id) {
+                throw new Error('Produto final (finished_product_id) é obrigatório.');
+            }
+
+            const db = await getDatabase();
+            if (!db) throw new Error('Banco de dados local não inicializado.');
+
+            const ingredients = (payload.ingredients || []).map(ing => {
+                if (!ing.input_product_id) {
+                    throw new Error('Todos os ingredientes devem ter um produto (input_product_id).');
+                }
+                if (Number(ing.quantity) <= 0) {
+                    throw new Error('A quantidade do ingrediente deve ser maior que zero.');
+                }
+                return {
+                    id: ing.id || uuidv4(),
+                    input_product_id: ing.input_product_id,
+                    quantity: Number(ing.quantity),
+                    unit: ing.unit || 'UN',
+                    loss_percentage: Number(ing.loss_percentage || 0),
+                    discount_from_stock: Boolean(ing.discount_from_stock)
+                };
+            });
+
+            const now = new Date().toISOString();
+            const newRecipe = {
+                id: uuidv4(),
+                finished_product_id: payload.finished_product_id,
+                name: payload.name || '',
+                yield_quantity: Number(payload.yield_quantity || 1),
+                preparation_time_minutes: Number(payload.preparation_time_minutes || 0),
+                instructions: payload.instructions || '',
+                is_active: true,
+                auto_production: false,
+                ingredients,
+                user_id: user.id,
+                created_at: now,
+                updated_at: now
+            };
+
+            const doc = await db.recipes.insert(newRecipe);
+            return doc.toJSON();
+        },
+        update: async (id, updates) => {
+            const db = await getDatabase();
+            if (!db) throw new Error('Banco de dados local não inicializado.');
+
+            const doc = await db.recipes.findOne({ selector: { id } }).exec();
+            if (!doc) throw new Error('Receita não encontrada.');
+
+            const patchObject = { ...updates };
+
+            // Validar e normalizar ingredientes se fornecidos
+            if (updates.ingredients !== undefined) {
+                patchObject.ingredients = updates.ingredients.map(ing => {
+                    if (!ing.input_product_id) {
+                        throw new Error('Todos os ingredientes devem ter um produto (input_product_id).');
+                    }
+                    if (Number(ing.quantity) <= 0) {
+                        throw new Error('A quantidade do ingrediente deve ser maior que zero.');
+                    }
+                    return {
+                        id: ing.id || uuidv4(),
+                        input_product_id: ing.input_product_id,
+                        quantity: Number(ing.quantity),
+                        unit: ing.unit || 'UN',
+                        loss_percentage: Number(ing.loss_percentage || 0),
+                        discount_from_stock: Boolean(ing.discount_from_stock)
+                    };
+                });
+            }
+
+            patchObject.updated_at = new Date().toISOString();
+
+            // Proteger campos imutáveis
+            delete patchObject.id;
+            delete patchObject.user_id;
+            delete patchObject.created_at;
+
+            await doc.incrementalPatch(patchObject);
+
+            // Retornar documento atualizado
+            const updatedDoc = await db.recipes.findOne({ selector: { id } }).exec();
+            return updatedDoc.toJSON();
+        },
+        softDelete: async (id) => {
+            const db = await getDatabase();
+            if (!db) throw new Error('Banco de dados local não inicializado.');
+
+            const doc = await db.recipes.findOne({ selector: { id } }).exec();
+            if (!doc) throw new Error('Receita não encontrada.');
+
+            await doc.incrementalPatch({
+                deleted_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+                is_active: false,
+                ingredients: []
+            });
+        }
+    },
 };
