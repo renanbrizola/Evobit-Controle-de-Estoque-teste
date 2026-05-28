@@ -24,6 +24,7 @@ const ProductForm = ({ initialData, onSave, onCancel, saving, categories = [], p
         category: '',
         description: '',
         is_active: true,
+        is_raw_material: false,
 
         // Pricing
         price: '',
@@ -70,6 +71,7 @@ const ProductForm = ({ initialData, onSave, onCancel, saving, categories = [], p
                 category: initialData.category || '',
                 description: initialData.description || '',
                 is_active: initialData.is_active !== false,
+                is_raw_material: initialData.is_raw_material === true,
 
                 price: initialData.price || '',
                 promotional_price: initialData.promotional_price || '',
@@ -189,9 +191,19 @@ const ProductForm = ({ initialData, onSave, onCancel, saving, categories = [], p
 
             <Textarea label="Descrição Detalhada" value={formData.description} onChange={e => handleChange('description', e.target.value)} rows={3} />
 
-            <div className="flex items-center gap-2">
-                <input type="checkbox" id="is_active" checked={formData.is_active} onChange={e => handleChange('is_active', e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary" />
-                <label htmlFor="is_active" className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer">Produto Ativo</label>
+            <div className="flex flex-col gap-3 p-4 bg-gray-50 dark:bg-white/5 rounded-xl border border-gray-100 dark:border-white/10 mt-4">
+                <div className="flex items-center gap-2">
+                    <input type="checkbox" id="is_active" checked={formData.is_active} onChange={e => handleChange('is_active', e.target.checked)} className="w-4 h-4 rounded border-gray-300 text-brand-primary focus:ring-brand-primary" />
+                    <label htmlFor="is_active" className="text-sm font-medium text-gray-700 dark:text-gray-300 select-none cursor-pointer">Produto Ativo</label>
+                </div>
+                
+                <div className="flex items-start gap-2">
+                    <input type="checkbox" id="is_raw_material" checked={formData.is_raw_material} onChange={e => handleChange('is_raw_material', e.target.checked)} className="w-4 h-4 mt-0.5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary" />
+                    <div className="flex flex-col">
+                        <label htmlFor="is_raw_material" className="text-sm font-bold text-gray-700 dark:text-gray-300 select-none cursor-pointer">Matéria-prima / Insumo</label>
+                        <span className="text-xs text-gray-500 mt-0.5">Marque esta opção para este produto aparecer no módulo Ficha Técnica → Insumos.</span>
+                    </div>
+                </div>
             </div>
         </div>
     );
