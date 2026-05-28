@@ -46,6 +46,7 @@ import TechnicalSheetDashboard from './pages/TechnicalSheet/Dashboard';
 import TechnicalSheetInputsCatalog from './pages/TechnicalSheet/InputsCatalog';
 import TechnicalSheetRecipes from './pages/TechnicalSheet/Recipes';
 import TechnicalSheetEquipment from './pages/TechnicalSheet/Equipment';
+import TechnicalSheetPricing from './pages/TechnicalSheet/Pricing';
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
@@ -168,7 +169,7 @@ function App() {
                             <Route path="insumos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetInputsCatalog /></SectionErrorBoundary>} />
                             <Route path="fichas" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetRecipes /></SectionErrorBoundary>} />
                             <Route path="equipamentos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetEquipment /></SectionErrorBoundary>} />
-                            <Route path="precificacao" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
+                            <Route path="precificacao" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetPricing /></SectionErrorBoundary>} />
                           </Route>
                         </Route>
 
