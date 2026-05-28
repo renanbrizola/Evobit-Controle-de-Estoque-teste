@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'react-router-dom';
-import { useLocation, useRouter, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useCallback,
   useEffect,
@@ -200,9 +200,9 @@ export function RecipeWorkbench({
   heading: string;
   description: string;
 }) {
-  const router = useRouter();
-  const pathname = useLocation();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const [searchParams] = useSearchParams();
   const isDemoSession = useAuthStore((state) => state.isDemoSession);
   const [loading, setLoading] = useState(!isDemoSession);
   const [message, setMessage] = useState<MessageState>(null);
@@ -299,7 +299,7 @@ export function RecipeWorkbench({
       params.set('etapa', stage);
     }
     const query = params.toString();
-    router.replace(query ? `${pathname}?${query}` : pathname, {
+    navigate(query ? `${pathname}?${query}` : pathname, { replace: true, 
       scroll: false,
     });
   }

@@ -44,6 +44,7 @@ import SectionErrorBoundary from './components/shared/SectionErrorBoundary';
 import OfflineIndicator from './components/shared/OfflineIndicator';
 import TechnicalSheetDashboard from './pages/TechnicalSheet/Dashboard';
 import TechnicalSheetInputsCatalog from './pages/TechnicalSheet/InputsCatalog';
+import TechnicalSheetRecipes from './pages/TechnicalSheet/Recipes';
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
@@ -164,7 +165,7 @@ function App() {
                           <Route path="ficha-tecnica">
                             <Route path="dashboard" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetDashboard /></SectionErrorBoundary>} />
                             <Route path="insumos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetInputsCatalog /></SectionErrorBoundary>} />
-                            <Route path="fichas" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
+                            <Route path="fichas" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetRecipes /></SectionErrorBoundary>} />
                             <Route path="equipamentos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
                             <Route path="precificacao" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProvisional /></SectionErrorBoundary>} />
                           </Route>
