@@ -157,11 +157,13 @@ function App() {
                         {/* ANALYTICS DASHBOARD */}
                         <Route path="dashboard" element={<Dashboard />} />
 
+                        {/* GLOBAL MASTER DATA */}
+                        <Route path="produtos" element={<SectionErrorBoundary section="products"><Products /></SectionErrorBoundary>} />
+
                         {/* ESTOQUE MODULE */}
                         <Route element={<ModuleGuard requiredModule="inventory" />}>
                           <Route path="estoque" element={<SectionErrorBoundary section="inventory"><Inventory /></SectionErrorBoundary>} />
                           <Route path="movimentacoes" element={<SectionErrorBoundary section="movements"><Movements /></SectionErrorBoundary>} />
-                          <Route path="produtos" element={<SectionErrorBoundary section="products"><Products /></SectionErrorBoundary>} />
 
                           <Route path="fornecedores" element={<SectionErrorBoundary section="providers"><Providers /></SectionErrorBoundary>} />
                           <Route path="categorias" element={<SectionErrorBoundary section="categories"><Categories /></SectionErrorBoundary>} />

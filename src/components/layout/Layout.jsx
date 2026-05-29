@@ -356,6 +356,17 @@ const Layout = () => {
                                 </h1>
                             </div>
                         </div>
+                        
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => navigate('/app/produtos')}
+                                className="hidden sm:flex items-center gap-1.5 rounded-[10px] border border-[var(--line-soft)] bg-white px-3 py-1.5 text-[12px] font-semibold text-[var(--text-strong)] shadow-sm transition-colors hover:bg-[var(--bg-subtle)]"
+                                title="Acessar o Cadastro Mestre de Produtos"
+                            >
+                                <Package size={14} className="text-[var(--text-muted)]" />
+                                Produtos
+                            </button>
+                        </div>
                     </div>
                 </header>
 

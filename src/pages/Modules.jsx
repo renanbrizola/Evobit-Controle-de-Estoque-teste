@@ -146,6 +146,15 @@ const Modules = () => {
                         <p className="text-xs text-gray-500">{user?.role === 'admin' ? 'Administrador' : 'Usuário'}</p>
                     </div>
 
+                    <button
+                        onClick={() => navigate('/app/produtos')}
+                        className="hidden sm:flex items-center gap-2 p-2 px-3 border border-brand-primary/20 bg-brand-primary/5 text-brand-primary rounded-lg text-sm font-bold hover:bg-brand-primary/10 transition-colors"
+                        title="Acessar o Cadastro Mestre de Produtos"
+                    >
+                        <Package size={16} />
+                        Gerenciar Produtos
+                    </button>
+
                     {/* DEV BUTTON */}
                     <button
                         onClick={resetModules}
