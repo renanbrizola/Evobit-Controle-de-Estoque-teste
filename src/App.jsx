@@ -43,10 +43,17 @@ import Reports from './pages/Reports';
 import SectionErrorBoundary from './components/shared/SectionErrorBoundary';
 import OfflineIndicator from './components/shared/OfflineIndicator';
 import TechnicalSheetDashboard from './pages/TechnicalSheet/Dashboard';
+import TechnicalSheetInputs from './pages/TechnicalSheet/Inputs';
 import TechnicalSheetInputsCatalog from './pages/TechnicalSheet/InputsCatalog';
+import TechnicalSheetCompoundInputs from './pages/TechnicalSheet/CompoundInputs';
+import TechnicalSheetCompoundInputDetail from './pages/TechnicalSheet/CompoundInputDetail';
 import TechnicalSheetRecipes from './pages/TechnicalSheet/Recipes';
 import TechnicalSheetEquipment from './pages/TechnicalSheet/Equipment';
+import TechnicalSheetExpenses from './pages/TechnicalSheet/Expenses';
 import TechnicalSheetPricing from './pages/TechnicalSheet/Pricing';
+import TechnicalSheetPromotions from './pages/TechnicalSheet/Promotions';
+import TechnicalSheetStaff from './pages/TechnicalSheet/Staff';
+import TechnicalSheetProductDetail from './pages/TechnicalSheet/ProductDetail';
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
@@ -166,10 +173,17 @@ function App() {
                         <Route element={<ModuleGuard requiredModule="technical_sheet" />}>
                           <Route path="ficha-tecnica">
                             <Route path="dashboard" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetDashboard /></SectionErrorBoundary>} />
-                            <Route path="insumos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetInputsCatalog /></SectionErrorBoundary>} />
+                            <Route path="insumos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetInputs /></SectionErrorBoundary>} />
+                            <Route path="insumos/cadastro" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetInputsCatalog /></SectionErrorBoundary>} />
+                            <Route path="insumos/compostos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetCompoundInputs /></SectionErrorBoundary>} />
+                            <Route path="insumos/compostos/:id" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetCompoundInputDetail /></SectionErrorBoundary>} />
                             <Route path="fichas" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetRecipes /></SectionErrorBoundary>} />
+                            <Route path="fichas/:code" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetProductDetail /></SectionErrorBoundary>} />
                             <Route path="equipamentos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetEquipment /></SectionErrorBoundary>} />
+                            <Route path="despesas" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetExpenses /></SectionErrorBoundary>} />
                             <Route path="precificacao" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetPricing /></SectionErrorBoundary>} />
+                            <Route path="promocoes" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetPromotions /></SectionErrorBoundary>} />
+                            <Route path="funcionarios" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetStaff /></SectionErrorBoundary>} />
                           </Route>
                         </Route>
 

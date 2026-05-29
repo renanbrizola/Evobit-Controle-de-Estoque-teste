@@ -1,7 +1,7 @@
 export const useAuthStore = (selector) => {
-    // Forçar isDemoSession para carregar os mocks visuais
+    // Desativando o isDemoSession para usar a API real do Evobit
     const state = {
-        isDemoSession: true,
+        isDemoSession: false,
     };
     return selector ? selector(state) : state;
 };

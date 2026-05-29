@@ -16,6 +16,7 @@ export interface RecipeListItem {
   categoryId?: string | null;
   productType: ProductType;
   isActive: boolean;
+  finished_product_id?: string;
   versions: Array<{
     id: string;
     versionNumber: number;
@@ -155,14 +156,76 @@ export interface RecipeEquipmentPayload {
 // Helpers do Evobit Adapter
 let cachedProducts: any[] = [];
 let cachedProductsMap = new Map<string, any>();
+let cachedRecipes: any[] = [];
+let cacheLoaded = false;
+
+export function resetCache() {
+  cachedProducts = [];
+  cachedProductsMap.clear();
+  cachedRecipes = [];
+  cacheLoaded = false;
+}
 
 async function loadProductsCache() {
-  if (cachedProducts.length === 0) {
+  if (!cacheLoaded) {
     // Busca até 10000 produtos para garantir cache completo
     const res = await api.products.list({ limit: 10000, active_only: true });
-    cachedProducts = res;
-    cachedProductsMap = new Map(res.map(p => [p.id, p]));
+    const products = Array.isArray(res) ? res : (res.items || []);
+    cachedProducts = products;
+    cachedProductsMap = new Map(products.map(p => [p.id, p]));
+
+    // Busca receitas reais do banco de dados local
+    if (api.recipes) {
+      const recRes = await api.recipes.list();
+      cachedRecipes = Array.isArray(recRes) ? recRes : (recRes.items || []);
+    } else {
+      cachedRecipes = [];
+    }
+
+    cacheLoaded = true;
   }
+}
+
+function isPackaging(p: any) {
+  if (!p) return false;
+  const categoryName = typeof p.category === 'object' ? p.category?.name : p.category;
+  const lowerCategory = String(categoryName || '').toLowerCase();
+  return lowerCategory === 'embalagens' || lowerCategory === 'embalagem';
+}
+
+function getProductCost(productId: string, visited: Set<string> = new Set(), depth = 0): number {
+  const prod = cachedProductsMap.get(productId);
+  const fallbackCost = prod ? (Number(prod.average_cost) || Number(prod.cost_price) || Number(prod.price) || 0) : 0;
+
+  if (!prod) return 0;
+
+  // Enforce maximum 1 level of depth and loop detection using visited set
+  if (prod.is_raw_material && depth < 1 && !visited.has(productId)) {
+    const recipe = cachedRecipes.find(r => r.finished_product_id === productId);
+    if (recipe) {
+      const newVisited = new Set(visited);
+      newVisited.add(productId);
+
+      let totalRecipeCost = 0;
+      const ingredients = recipe.ingredients || [];
+      for (const ing of ingredients) {
+        if (!ing.input_product_id) continue;
+        const ingProdCost = getProductCost(ing.input_product_id, newVisited, depth + 1);
+        const lossPercentage = Number(ing.loss_percentage) || 0;
+        const qtyWithLoss = Number(ing.quantity) * (1 + (lossPercentage / 100));
+        totalRecipeCost += qtyWithLoss * ingProdCost;
+      }
+
+      const yieldQuantity = Number(recipe.yield_quantity) || 1;
+      const calculatedUnitCost = yieldQuantity > 0 ? totalRecipeCost / yieldQuantity : 0;
+
+      if (calculatedUnitCost > 0) {
+        return calculatedUnitCost;
+      }
+    }
+  }
+
+  return fallbackCost;
 }
 
 function calculateCost(ingredients: any[] = []) {
@@ -173,7 +236,7 @@ function calculateCost(ingredients: any[] = []) {
     let unitCost = 0;
     
     if (prod) {
-      unitCost = Number(prod.average_cost) || Number(prod.cost_price) || Number(prod.price) || 0;
+      unitCost = getProductCost(prod.id);
     }
     
     // Calcula o custo com perda
@@ -183,9 +246,13 @@ function calculateCost(ingredients: any[] = []) {
     
     totalCost += ingCost;
 
+    // Vincula a sub-receita se houver uma vinculada ao produto
+    const linkedRecipe = cachedRecipes.find(r => r.finished_product_id === ing.input_product_id);
+
     return {
       id: ing.id || uuidv4(),
       inventoryItemId: ing.input_product_id,
+      subRecipeId: linkedRecipe ? linkedRecipe.id : undefined,
       quantity: Number(ing.quantity),
       uomId: ing.unit || 'UN',
       notes: lossPercentage > 0 ? `Perda: ${lossPercentage}%` : '',
@@ -221,9 +288,10 @@ export async function listRecipes(productType?: ProductType): Promise<RecipeList
   }
   
   await loadProductsCache();
-  const recipes = await api.recipes.list();
+  const response = await api.recipes.list();
+  const recipes = Array.isArray(response) ? response : (response.items || []);
 
-  return recipes.map(recipe => {
+  const mapped = recipes.map(recipe => {
     const { totalCost } = calculateCost(recipe.ingredients);
     const yq = Number(recipe.yield_quantity) || 1;
     const unitCost = yq > 0 ? totalCost / yq : totalCost;
@@ -235,6 +303,7 @@ export async function listRecipes(productType?: ProductType): Promise<RecipeList
       categoryId: null,
       productType: 'FINAL' as ProductType,
       isActive: recipe.is_active !== false,
+      finished_product_id: recipe.finished_product_id,
       versions: [{
         id: recipe.id + '-v1',
         versionNumber: 1,
@@ -252,6 +321,85 @@ export async function listRecipes(productType?: ProductType): Promise<RecipeList
       }]
     };
   });
+
+  if (productType) {
+    if (productType === 'SUB_RECEITA') {
+      return mapped.filter(r => {
+        const prod = cachedProductsMap.get(r.finished_product_id);
+        return prod?.is_raw_material === true;
+      });
+    } else if (productType === 'FINAL') {
+      return mapped.filter(r => {
+        const prod = cachedProductsMap.get(r.finished_product_id);
+        return !prod || prod.is_raw_material !== true;
+      });
+    }
+  }
+
+  return mapped;
+}
+
+export async function loadTechnicalSheetProducts() {
+  await loadProductsCache();
+
+  const products = cachedProducts;
+  const recipes = cachedRecipes;
+
+  const recipeProductIds = new Set(recipes.map(r => r.finished_product_id).filter(Boolean));
+
+  const simpleInputs = products.filter(p =>
+    p.is_raw_material === true &&
+    !recipeProductIds.has(p.id) &&
+    !isPackaging(p)
+  ).map(p => {
+    const cost = getProductCost(p.id);
+    return {
+      ...p,
+      cost_price: cost,
+      average_cost: cost
+    };
+  });
+
+  const compoundInputs = products.filter(p =>
+    p.is_raw_material === true &&
+    recipeProductIds.has(p.id)
+  ).map(p => {
+    const cost = getProductCost(p.id);
+    return {
+      ...p,
+      cost_price: cost,
+      average_cost: cost
+    };
+  });
+
+  const packagingItems = products.filter(p => isPackaging(p)).map(p => {
+    const cost = getProductCost(p.id);
+    return {
+      ...p,
+      cost_price: cost,
+      average_cost: cost
+    };
+  });
+
+  const finalProducts = products.filter(p =>
+    p.is_active !== false &&
+    !p.deleted_at
+  );
+
+  const recipesByFinishedProductId = new Map<string, any>();
+  recipes.forEach(r => {
+    if (r.finished_product_id) {
+      recipesByFinishedProductId.set(r.finished_product_id, r);
+    }
+  });
+
+  return {
+    simpleInputs,
+    compoundInputs,
+    packagingItems,
+    finalProducts,
+    recipesByFinishedProductId
+  };
 }
 
 export async function getRecipe(id: string): Promise<RecipeDetail> {
@@ -309,14 +457,12 @@ export async function createRecipe(payload: RecipePayload): Promise<RecipeDetail
     ingredients: []
   });
 
+  resetCache();
   return getRecipe(recipe.id);
 }
 
 export async function updateRecipe(id: string, payload: RecipePayload): Promise<RecipeDetail> {
   const current = await api.recipes.getById(id);
-  
-  // Extrai perda do notes
-  const parsedIngredients = current?.ingredients || [];
   
   await api.recipes.update(id, {
     name: payload.name,
@@ -325,11 +471,14 @@ export async function updateRecipe(id: string, payload: RecipePayload): Promise<
     instructions: payload.description || ''
   });
 
+  resetCache();
   return getRecipe(id);
 }
 
 export async function archiveRecipe(id: string) {
-  return api.recipes.softDelete(id);
+  const res = await api.recipes.softDelete(id);
+  resetCache();
+  return res;
 }
 
 // =======================
@@ -362,9 +511,21 @@ export async function addRecipeIngredient(
   const recipe = await api.recipes.getById(recipeId);
   if (!recipe) throw new Error('Receita não encontrada');
 
+  let inputProductId = payload.inventoryItemId;
+  if (payload.subRecipeId) {
+    const subRecipe = await api.recipes.getById(payload.subRecipeId);
+    if (subRecipe && subRecipe.finished_product_id) {
+      inputProductId = subRecipe.finished_product_id;
+    }
+  }
+
+  if (!inputProductId) {
+    throw new Error('Produto do ingrediente não especificado.');
+  }
+
   const newIng = {
     id: uuidv4(),
-    input_product_id: payload.inventoryItemId,
+    input_product_id: inputProductId,
     quantity: payload.quantity,
     unit: payload.uomId,
     loss_percentage: 0,
@@ -373,6 +534,7 @@ export async function addRecipeIngredient(
 
   const updatedIngredients = [...(recipe.ingredients || []), newIng];
   await api.recipes.update(recipeId, { ingredients: updatedIngredients });
+  resetCache();
   return { success: true };
 }
 
@@ -385,12 +547,20 @@ export async function updateRecipeIngredient(
   const recipe = await api.recipes.getById(recipeId);
   if (!recipe) throw new Error('Receita não encontrada');
 
+  let inputProductId = payload.inventoryItemId;
+  if (payload.subRecipeId) {
+    const subRecipe = await api.recipes.getById(payload.subRecipeId);
+    if (subRecipe && subRecipe.finished_product_id) {
+      inputProductId = subRecipe.finished_product_id;
+    }
+  }
+
   const updatedIngredients = (recipe.ingredients || []).map(ing => {
     if (ing.id === ingredientId) {
       return {
         ...ing,
         quantity: payload.quantity,
-        input_product_id: payload.inventoryItemId || ing.input_product_id,
+        input_product_id: inputProductId || ing.input_product_id,
         unit: payload.uomId || ing.unit
       };
     }
@@ -398,6 +568,7 @@ export async function updateRecipeIngredient(
   });
 
   await api.recipes.update(recipeId, { ingredients: updatedIngredients });
+  resetCache();
   return { success: true };
 }
 
@@ -411,6 +582,7 @@ export async function deleteRecipeIngredient(
 
   const updatedIngredients = (recipe.ingredients || []).filter(ing => ing.id !== ingredientId);
   await api.recipes.update(recipeId, { ingredients: updatedIngredients });
+  resetCache();
   return { success: true };
 }
 
@@ -426,6 +598,7 @@ export async function addRecipeStep(
   const instructions = recipe?.instructions || '';
   const newInstructions = instructions ? `${instructions}\n\nPasso: ${payload.description}` : payload.description;
   await api.recipes.update(recipeId, { instructions: newInstructions });
+  resetCache();
   return { success: true };
 }
 
@@ -435,7 +608,8 @@ export async function updateRecipeStep(
   stepId: string,
   payload: RecipeStepPayload,
 ) {
-  return { success: true }; // No-op for now to avoid overwriting all instructions complexly
+  resetCache();
+  return { success: true };
 }
 
 export async function deleteRecipeStep(
@@ -443,6 +617,7 @@ export async function deleteRecipeStep(
   versionId: string,
   stepId: string,
 ) {
+  resetCache();
   return { success: true };
 }
 

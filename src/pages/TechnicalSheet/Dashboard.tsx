@@ -21,7 +21,7 @@ import {
 } from '../../modules/ficha-tecnica/components/management-primitives';
 import { getApiErrorMessage } from '../../modules/ficha-tecnica/lib/api-errors';
 import { useWorkbookSnapshot } from '../../modules/ficha-tecnica/lib/workbook-api';
-import { saveWorkbookSettings } from '../../modules/ficha-tecnica/lib/workbook-management-api';
+import { saveWorkbookSettings, type WorkbookSettingsPayload } from '../../modules/ficha-tecnica/lib/workbook-management-api';
 import { useAuthStore } from '../../modules/ficha-tecnica/mock/auth.store';
 
 function KpiCard({
@@ -79,7 +79,7 @@ function NavCard({
 }) {
   return (
     <Link
-      href={href}
+      to={href}
       className="group flex items-center gap-3 rounded-[var(--radius-panel)] border border-[var(--line-soft)] bg-[var(--bg-surface)] px-4 py-3.5 shadow-[var(--shadow-panel)] transition-all hover:border-[var(--line-strong)] hover:shadow-md"
     >
       <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${color}`}>
@@ -197,13 +197,13 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-3 gap-2 pt-1">
-              <Link href="/staff" className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--line-soft)] px-3 py-2 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)]">
+              <Link to="/app/ficha-tecnica/funcionarios" className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--line-soft)] px-3 py-2 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)]">
                 <Users size={12} /> Equipe
               </Link>
-              <Link href="/expenses" className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--line-soft)] px-3 py-2 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)]">
+              <Link to="/app/ficha-tecnica/despesas" className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--line-soft)] px-3 py-2 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)]">
                 <TrendingUp size={12} /> Despesas
               </Link>
-              <Link href="/equipment" className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--line-soft)] px-3 py-2 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)]">
+              <Link to="/app/ficha-tecnica/equipamentos" className="flex items-center justify-center gap-1.5 rounded-lg border border-[var(--line-soft)] px-3 py-2 text-xs font-medium text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-subtle)]">
                 <Zap size={12} /> Equipamentos
               </Link>
             </div>
@@ -217,12 +217,12 @@ export default function DashboardPage() {
             <h2 className="text-[13px] font-semibold text-[var(--text-strong)]">Visão geral do sistema</h2>
           </div>
           <div className="grid gap-3 p-4 sm:grid-cols-2">
-            <NavCard icon={ChefHat} label="Fichas técnicas" value={data.summary.totalRecipes} href="/products" color="bg-[var(--brand-accent-600)]" />
-            <NavCard icon={Package} label="Insumos" value={data.summary.totalInventoryItems} href="/inputs/catalog" color="bg-[var(--state-info-700)]" />
-            <NavCard icon={Tag} label="Prod. precificados" value={data.summary.totalPricedProducts} href="/pricing" color="bg-[var(--state-success-700)]" />
-            <NavCard icon={TrendingUp} label="Preços ativos" value={data.summary.activePrices ?? 0} href="/pricing" color="bg-[var(--brand-primary-600)]" />
-            <NavCard icon={Users} label="Funcionários" value={profile.activeEmployees} href="/staff" color="bg-[var(--state-warning-700)]" />
-            <NavCard icon={Flame} label="Equipamentos" value={`${data.utilities.electricEquipments.length + data.utilities.gasEquipments.length}`} href="/equipment" color="bg-[var(--state-danger-700)]" />
+            <NavCard icon={ChefHat} label="Fichas técnicas" value={data.summary.totalRecipes} href="/app/ficha-tecnica/fichas" color="bg-[var(--brand-accent-600)]" />
+            <NavCard icon={Package} label="Insumos" value={data.summary.totalInventoryItems} href="/app/ficha-tecnica/insumos" color="bg-[var(--state-info-700)]" />
+            <NavCard icon={Tag} label="Prod. precificados" value={data.summary.totalPricedProducts} href="/app/ficha-tecnica/precificacao" color="bg-[var(--state-success-700)]" />
+            <NavCard icon={TrendingUp} label="Preços ativos" value={data.summary.activePrices ?? 0} href="/app/ficha-tecnica/precificacao" color="bg-[var(--brand-primary-600)]" />
+            <NavCard icon={Users} label="Funcionários" value={profile.activeEmployees} href="/app/ficha-tecnica/funcionarios" color="bg-[var(--state-warning-700)]" />
+            <NavCard icon={Flame} label="Equipamentos" value={`${data.utilities.electricEquipments.length + data.utilities.gasEquipments.length}`} href="/app/ficha-tecnica/equipamentos" color="bg-[var(--state-danger-700)]" />
           </div>
         </div>
       </div>

@@ -113,11 +113,19 @@ const Layout = () => {
         { path: '/app/relatorios', label: 'Relatórios', icon: FileText, module: 'inventory' },
 
         // --- FICHA TÉCNICA ---
-        { path: '/app/ficha-tecnica/dashboard', label: 'Dashboard', icon: BarChart3, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/dashboard', label: 'Início', icon: BarChart3, module: 'technical_sheet' },
+        // Produção
         { path: '/app/ficha-tecnica/insumos', label: 'Insumos', icon: Package, module: 'technical_sheet' },
-        { path: '/app/ficha-tecnica/fichas', label: 'Fichas Técnicas', icon: ShoppingBag, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/insumos/cadastro', label: 'Cadastro de Insumos', icon: Package, module: 'technical_sheet', indent: true },
+        { path: '/app/ficha-tecnica/insumos/compostos', label: 'Insumos Compostos', icon: Package, module: 'technical_sheet', indent: true },
         { path: '/app/ficha-tecnica/equipamentos', label: 'Equipamentos', icon: Cpu, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/fichas', label: 'Fichas Técnicas', icon: ShoppingBag, module: 'technical_sheet' },
+        // Financeiro
+        { path: '/app/ficha-tecnica/despesas', label: 'Despesas', icon: FileText, module: 'technical_sheet' },
         { path: '/app/ficha-tecnica/precificacao', label: 'Precificação', icon: Tag, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/promocoes', label: 'Promoções', icon: TrendingUp, module: 'technical_sheet' },
+        // Administração
+        { path: '/app/ficha-tecnica/funcionarios', label: 'Funcionários', icon: Users, module: 'technical_sheet' },
 
         // --- VENDAS ---
         { path: '/app/dashboard-vendas', label: 'Dashboard', icon: BarChart3, module: 'sales' },
@@ -238,17 +246,23 @@ const Layout = () => {
                                                     )}
                                                     style={{ backgroundColor: 'var(--color-secondary)' }}
                                                 />
-                                                <span
-                                                    className={clsx(
-                                                        'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border text-sm transition-colors',
-                                                        active
-                                                            ? 'border-white/12 bg-black/10 text-[#f2dfbf]'
-                                                            : 'border-white/8 bg-black/5 text-[var(--sidebar-text)]',
-                                                    )}
-                                                >
-                                                    <item.icon size={16} />
-                                                </span>
-                                                <span className="min-w-0 flex-1 truncate leading-none">{item.label}</span>
+                                                {item.indent ? (
+                                                    <span className="flex h-5 w-5 shrink-0 items-center justify-center ml-1.5 text-sm text-[var(--sidebar-text)]">
+                                                        <ChevronRight size={12} />
+                                                    </span>
+                                                ) : (
+                                                    <span
+                                                        className={clsx(
+                                                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border text-sm transition-colors',
+                                                            active
+                                                                ? 'border-white/12 bg-black/10 text-[#f2dfbf]'
+                                                                : 'border-white/8 bg-black/5 text-[var(--sidebar-text)]',
+                                                        )}
+                                                    >
+                                                        <item.icon size={16} />
+                                                    </span>
+                                                )}
+                                                <span className={clsx("min-w-0 flex-1 truncate leading-none", item.indent && 'text-[12px]')}>{item.label}</span>
                                                 
                                                 {isLocked && <Lock size={14} className="text-[var(--sidebar-text)] shrink-0 ml-2" />}
                                                 

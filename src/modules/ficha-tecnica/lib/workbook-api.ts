@@ -293,7 +293,11 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
     api.get<{ success: boolean; data: WorkbookSnapshotDto }>('/reports/workbook')
       .then((response) => {
         if (!active) return;
-        setData(response.data.data);
+        const payload = response.data.data;
+        if (!payload || !payload.summary || !payload.expenses || !payload.inputs) {
+          throw new Error('Payload vazio ou invǭlido retornado da API local.');
+        }
+        setData(payload);
         setSource('api');
       })
       .catch(() => {
@@ -336,7 +340,11 @@ export function useWorkbookProductDetail(code: string, isDemoSession: boolean) {
     api.get<{ success: boolean; data: WorkbookProductDetailDto }>(`/reports/workbook/products/${code}`)
       .then((response) => {
         if (!active) return;
-        setData(response.data.data);
+        const payload = response.data.data;
+        if (!payload || !payload.breakdown) {
+          throw new Error('Payload vazio ou invǭlido retornado da API local.');
+        }
+        setData(payload);
         setSource('api');
       })
       .catch(() => {

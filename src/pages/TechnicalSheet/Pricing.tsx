@@ -406,7 +406,7 @@ export default function PricingPage() {
                 >
                   <td className="px-4 py-3">
                     <span className="mr-2 text-[11px] font-semibold text-[#C9A84C]">{row.code}</span>
-                    <Link href={`/products/${row.recipeId}`} className="font-medium text-gray-800 transition-colors hover:text-[var(--brand-primary-700)]">
+                    <Link to={`/app/ficha-tecnica/fichas?recipeId=${row.recipeId}`} className="font-medium text-gray-800 transition-colors hover:text-[var(--brand-primary-700)]">
                       {row.recipeName}
                     </Link>
                   </td>

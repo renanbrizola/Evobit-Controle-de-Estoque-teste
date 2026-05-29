@@ -246,7 +246,7 @@ export function RecipeWorkbench({
     Array<{ id: string; name: string }>
   >([]);
   const [subRecipes, setSubRecipes] = useState<
-    Array<{ id: string; name: string }>
+    Array<{ id: string; name: string; finished_product_id?: string }>
   >([]);
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [productStage, setProductStage] = useState<CompoundStageKey>('nome');
@@ -294,8 +294,9 @@ export function RecipeWorkbench({
       return;
     }
 
-    void bootstrap();
-  }, [isDemoSession, productType]);
+    const recipeIdParam = searchParams.get('recipeId');
+    void bootstrap(recipeIdParam || undefined);
+  }, [isDemoSession, productType, searchParams]);
 
   function navigateCompoundStage(stage: CompoundStageKey) {
     if (!isGuidedMode) return;
@@ -332,7 +333,11 @@ export function RecipeWorkbench({
       setProducts(productsData);
       setRecipes(recipeData);
       setSubRecipes(
-        subRecipeData.map((recipe) => ({ id: recipe.id, name: recipe.name })),
+        subRecipeData.map((recipe) => ({
+          id: recipe.id,
+          name: recipe.name,
+          finished_product_id: recipe.finished_product_id,
+        })),
       );
 
       const nextRecipeId =
@@ -366,7 +371,11 @@ export function RecipeWorkbench({
     ]);
     setRecipes(recipeData);
     setSubRecipes(
-      subRecipeData.map((recipe) => ({ id: recipe.id, name: recipe.name })),
+      subRecipeData.map((recipe) => ({
+        id: recipe.id,
+        name: recipe.name,
+        finished_product_id: recipe.finished_product_id,
+      })),
     );
     return recipeData;
   }
@@ -565,6 +574,27 @@ export function RecipeWorkbench({
 
   async function handleIngredientSubmit() {
     if (!selectedRecipeId || !currentVersion) return;
+
+    let targetProductId = ingredientForm.inventoryItemId;
+    if (ingredientForm.subRecipeId) {
+      const subRec = subRecipes.find(r => r.id === ingredientForm.subRecipeId) || recipes.find(r => r.id === ingredientForm.subRecipeId);
+      if (subRec) {
+        const fullRecipeObj = recipes.find(r => r.id === subRec.id);
+        if (fullRecipeObj && fullRecipeObj.finished_product_id) {
+          targetProductId = fullRecipeObj.finished_product_id;
+        } else if ('finished_product_id' in subRec && subRec.finished_product_id) {
+          targetProductId = subRec.finished_product_id as string;
+        }
+      }
+    }
+
+    if (detail && detail.finished_product_id && targetProductId === detail.finished_product_id) {
+      setMessage({
+        tone: 'error',
+        text: 'Você não pode usar o próprio produto final como ingrediente da ficha.',
+      });
+      return;
+    }
 
     const payload: RecipeIngredientPayload = {
       inventoryItemId: ingredientForm.inventoryItemId || undefined,
@@ -1077,10 +1107,10 @@ export function RecipeWorkbench({
           />
         ) : null}
 
-        {isDemoSession ? (
+        {products.length === 0 && !loading ? (
           <StatusMessage
-            tone="error"
-            message="Entre com a API para cadastrar e editar produtos reais."
+            tone="warning"
+            message="Cadastre produtos no módulo Produtos para criar fichas técnicas."
           />
         ) : null}
         {message ? (
@@ -1109,8 +1139,9 @@ export function RecipeWorkbench({
             </div>
             <ActionButton
               onClick={openProductCreate}
-              disabled={loading || isDemoSession}
+              disabled={loading || isDemoSession || products.length === 0}
               className="gap-1.5"
+              title={products.length === 0 ? "Cadastre primeiro um produto final no módulo Produtos." : undefined}
             >
               <Plus size={14} /> Nova ficha
             </ActionButton>
@@ -1230,9 +1261,9 @@ export function RecipeWorkbench({
                   <tr>
                     <td colSpan={7} className="px-5 py-14 text-center">
                       <p className="text-sm font-medium text-[var(--text-strong)]">
-                        Nenhum produto cadastrado
+                        Nenhuma ficha técnica cadastrada
                       </p>
-                      {!isDemoSession ? (
+                      {products.length > 0 ? (
                         <button
                           type="button"
                           onClick={openProductCreate}
@@ -1240,7 +1271,11 @@ export function RecipeWorkbench({
                         >
                         Cadastrar primeira ficha
                         </button>
-                      ) : null}
+                      ) : (
+                        <p className="mt-2 text-xs text-[var(--text-muted)]">
+                          Cadastre primeiro um produto final no módulo Produtos para habilitar a criação de fichas técnicas.
+                        </p>
+                      )}
                     </td>
                   </tr>
                 )}

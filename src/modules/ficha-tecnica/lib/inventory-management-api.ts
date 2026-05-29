@@ -1,6 +1,6 @@
 'use client';
 
-import { StockMovementType } from '../types/enums';
+import { StockMovementType, ItemType } from '../types/enums';
 import api from '../lib/api';
 import { api as realApi } from '../../../services/api';
 
@@ -122,13 +122,19 @@ export async function listUoms() {
 }
 
 export async function listCategories() {
-  const docs = await realApi.categories.list();
+  const docsResponse = await realApi.categories.list();
+  const docs = Array.isArray(docsResponse) ? docsResponse : (docsResponse.items || []);
   return docs.map((d: any) => ({ id: d.id, name: d.name }));
 }
 
 export async function listSuppliers() {
+  if (realApi.providers) {
+    const docsResponse = await realApi.providers.list();
+    const docs = Array.isArray(docsResponse) ? docsResponse : (docsResponse?.items || []);
+    return docs.map((d: any) => ({ id: d.id, name: d.name || d.fantasy_name || 'Fornecedor sem nome' }));
+  }
   const response = await api.get<{ success: boolean; data: { items: Array<{ id: string; name: string }> } }>('/suppliers?limit=100');
-  return response.data.data.items;
+  return response.data?.data?.items || [];
 }
 
 export async function createSupplier(payload: InventorySupplierPayload) {
@@ -136,23 +142,120 @@ export async function createSupplier(payload: InventorySupplierPayload) {
   return response.data.data;
 }
 
-export async function listInventoryItems() {
-  const response = await api.get<{ success: boolean; data: { items: InventoryCatalogItem[] } }>('/inventory?limit=200');
-  return response.data.data.items;
+export async function searchInventoryItems(search: string, limit = 20): Promise<InventoryCatalogItem[]> {
+  try {
+    const prodRes = await realApi.products.list({ limit: 1000 });
+    const products = Array.isArray(prodRes) ? prodRes : (prodRes.items || []);
+
+    let recipes: any[] = [];
+    if (realApi.recipes) {
+      const recRes = await realApi.recipes.list();
+      recipes = Array.isArray(recRes) ? recRes : (recRes.items || []);
+    }
+
+    const recipeProductIds = new Set(recipes.map(r => r.finished_product_id).filter(Boolean));
+    const recipesByFinishedProductId = new Map<string, any>();
+    recipes.forEach(r => {
+      if (r.finished_product_id) {
+        recipesByFinishedProductId.set(r.finished_product_id, r);
+      }
+    });
+
+    const isPackaging = (p: any) => {
+      if (!p) return false;
+      const categoryName = typeof p.category === 'object' ? p.category?.name : p.category;
+      const lowerCategory = String(categoryName || '').toLowerCase();
+      return lowerCategory === 'embalagens' || lowerCategory === 'embalagem';
+    };
+
+    const rawMaterialsAndPackaging = products.filter(
+      (p: any) => Boolean(p.is_raw_material) || isPackaging(p)
+    );
+
+    const searchTerm = search.trim().toLowerCase();
+    const filtered = rawMaterialsAndPackaging.filter((p: any) => {
+      if (!searchTerm) return true;
+      return p.name?.toLowerCase().includes(searchTerm);
+    });
+
+    const mapped: InventoryCatalogItem[] = filtered.slice(0, limit).map((p: any) => {
+      const hasRecipe = recipeProductIds.has(p.id);
+      const recipe = recipesByFinishedProductId.get(p.id);
+
+      let itemType = ItemType.INSUMO;
+      if (isPackaging(p)) {
+        itemType = ItemType.EMBALAGEM;
+      } else if (hasRecipe) {
+        itemType = ItemType.COMPOSITE;
+      }
+
+      return {
+        id: p.id,
+        name: p.name || 'Sem nome',
+        code: hasRecipe && recipe ? `SUBRECIPE:${recipe.id}` : (p.code || null),
+        type: itemType,
+        uom: {
+          id: p.unit || 'UN',
+          name: p.unit || 'Unidade',
+          abbreviation: p.unit || 'UN',
+        },
+        category: p.category ? {
+          id: typeof p.category === 'object' ? p.category.id : p.category,
+          name: typeof p.category === 'object' ? p.category.name : p.category,
+        } : null,
+      };
+    });
+
+    return mapped;
+  } catch (err) {
+    console.error('Error in searchInventoryItems:', err);
+    return [];
+  }
 }
 
-export async function searchInventoryItems(search: string, limit = 20): Promise<InventoryCatalogItem[]> {
-  const params = new URLSearchParams({ limit: String(limit) });
-  if (search.trim()) params.set('search', search.trim());
-  const response = await api.get<{ success: boolean; data: { items: InventoryCatalogItem[] } }>(
-    `/inventory?${params.toString()}`,
-  );
-  return response.data.data.items;
+export async function listInventoryItems(): Promise<InventoryCatalogItem[]> {
+  return searchInventoryItems('', 200);
 }
 
 export async function getInventoryItemDetail(id: string) {
+  if (realApi.products) {
+    const prodRes = await realApi.products.list({ limit: 1000 });
+    const products = Array.isArray(prodRes) ? prodRes : (prodRes?.items || []);
+    const p = products.find((x: any) => x.id === id);
+    if (p) {
+      return {
+        id: p.id,
+        code: p.barcode || p.id.substring(0, 8),
+        name: p.name,
+        uom: {
+          id: p.unit || 'UN',
+          name: p.unit || 'Unidade',
+          abbreviation: p.unit || 'UN'
+        },
+        category: p.category ? { id: p.category, name: p.category } : null,
+        minStock: Number(p.min_stock || 0),
+        currentStock: Number(p.current_stock || 0),
+        stockMovements: []
+      };
+    }
+  }
+
   const response = await api.get<{ success: boolean; data: InventoryItemDetail }>(`/inventory/${id}`);
-  return response.data.data;
+  const payload = response.data?.data;
+  
+  if (!payload || !payload.id) {
+    return {
+      id,
+      code: id.substring(0, 8),
+      name: 'Insumo não encontrado',
+      uom: { id: 'UN', name: 'Unidade', abbreviation: 'UN' },
+      category: null,
+      minStock: 0,
+      currentStock: 0,
+      stockMovements: []
+    };
+  }
+  return payload;
 }
 
 export async function listInventoryMovements(id: string, limit = 20) {
