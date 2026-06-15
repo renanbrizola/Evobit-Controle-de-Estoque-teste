@@ -89,12 +89,12 @@ export async function listPrices() {
   return response.data.data;
 }
 
-export async function approvePrice(id: string) {
-  const response = await api.post<{ success: boolean; data: PriceRow }>(`/pricing/${id}/approve`);
-  return response.data.data;
+export async function approvePrice(_id: string): Promise<PriceRow> {
+  // TODO(precificação): persistir aprovação de preço na API real do Evobit.
+  throw new Error('Aprovação de preço ainda não está disponível no Evobit.');
 }
 
-export async function activatePrice(id: string) {
-  const response = await api.post<{ success: boolean; data: PriceRow }>(`/pricing/${id}/activate`);
-  return response.data.data;
+export async function activatePrice(_id: string): Promise<PriceRow> {
+  // TODO(precificação): persistir ativação de preço na API real do Evobit.
+  throw new Error('Ativação de preço ainda não está disponível no Evobit.');
 }
