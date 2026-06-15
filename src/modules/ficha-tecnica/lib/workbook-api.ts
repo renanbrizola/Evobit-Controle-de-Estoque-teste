@@ -9,6 +9,7 @@ import {
   WorkbookSnapshotDto,
 } from '../types/enums';
 import api from '../lib/api';
+import { listWorkbookInputs } from './inventory-management-api';
 import {
   depreciationExpenses,
   equipmentEnergyRows,
@@ -282,6 +283,7 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
     let active = true;
 
     if (isDemoSession) {
+      // Demo bootstrap: synchronous state init from local mock data is intentional.
       setData(buildMockSnapshot());
       setLoading(false);
       setSource('demo');
@@ -290,24 +292,22 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
 
     setLoading(true);
 
-    api.get<{ success: boolean; data: WorkbookSnapshotDto }>('/reports/workbook')
-      .then((response) => {
+    (async () => {
+      try {
+        const inputs = await listWorkbookInputs();
         if (!active) return;
-        const payload = response.data.data;
-        if (!payload || !payload.summary || !payload.expenses || !payload.inputs) {
-          throw new Error('Payload vazio ou invǭlido retornado da API local.');
-        }
-        setData(payload);
+        // Insumos reais do cadastro do Evobit; demais seções do workbook
+        // (despesas, equipe, utilidades) seguem em mock até a migração delas.
+        setData({ ...buildMockSnapshot(), inputs });
         setSource('api');
-      })
-      .catch(() => {
+      } catch {
         if (!active) return;
         setData(buildMockSnapshot());
         setSource('demo');
-      })
-      .finally(() => {
+      } finally {
         if (active) setLoading(false);
-      });
+      }
+    })();
 
     return () => {
       active = false;
@@ -329,9 +329,12 @@ export function useWorkbookProductDetail(code: string, isDemoSession: boolean) {
     let active = true;
 
     if (isDemoSession) {
+      // Demo bootstrap: synchronous state init from local mock data is intentional.
+      /* eslint-disable react-hooks/set-state-in-effect */
       setData(buildMockProductDetail(code));
       setLoading(false);
       setSource('demo');
+      /* eslint-enable react-hooks/set-state-in-effect */
       return;
     }
 

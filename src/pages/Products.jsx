@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -19,6 +20,8 @@ import DataImporter from '../components/shared/DataImporter';
 const Products = () => {
     const { t } = useLanguage();
     const { getCurrencySymbol } = useTheme();
+    const [searchParams, setSearchParams] = useSearchParams();
+    const tipo = searchParams.get('tipo');
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
     const [providers, setProviders] = useState([]);
@@ -35,7 +38,20 @@ const Products = () => {
     // Form State
     const [editingProduct, setEditingProduct] = useState(null);
     const [viewingProduct, setViewingProduct] = useState(null);
+    const [productFormDefaults, setProductFormDefaults] = useState(null);
 
+    // Auto-open form if intent is creating an insumo
+    useEffect(() => {
+        if (tipo === 'insumo') {
+            setProductFormDefaults({ is_raw_material: true });
+            setIsFormOpen(true);
+            
+            // Clean up the URL so it doesn't reopen if the user closes it
+            const newSearchParams = new URLSearchParams(searchParams);
+            newSearchParams.delete('tipo');
+            setSearchParams(newSearchParams, { replace: true });
+        }
+    }, [tipo, searchParams, setSearchParams]);
 
     const handleViewDetails = (product) => {
         setViewingProduct(product);
@@ -126,11 +142,19 @@ const Products = () => {
             if (editingProduct) {
                 // UPDATE
                 await api.products.update(editingProduct.id, formData);
-                toast.success(t('products', 'toast.updated'));
+                if (formData.is_raw_material) {
+                    toast.success("Produto atualizado! Ele já aparecerá em Ficha Técnica → Insumos.");
+                } else {
+                    toast.success(t('products', 'toast.updated'));
+                }
             } else {
                 // CREATE
                 await api.products.create(formData);
-                toast.success(t('products', 'toast.created'));
+                if (formData.is_raw_material) {
+                    toast.success("Produto salvo! Ele já aparecerá em Ficha Técnica → Insumos.");
+                } else {
+                    toast.success(t('products', 'toast.created'));
+                }
             }
 
             loadData();
@@ -153,6 +177,7 @@ const Products = () => {
 
     const handleCloseForm = () => {
         setEditingProduct(null);
+        setProductFormDefaults(null);
         setIsFormOpen(false);
     };
 
@@ -520,21 +545,20 @@ const Products = () => {
             )}
 
             {/* Modal-like Form */}
-            <Modal isOpen={isFormOpen} onClose={handleCloseForm} className="max-w-3xl">
-                <div className="flex items-center justify-between mb-6 border-b border-white/5 pb-4">
-                    <h3 className="text-xl font-serif font-bold text-brand-light">
-                        {editingProduct ? t('common', 'edit') : t('products', 'newProduct')}
-                    </h3>
-                </div>
-
+            <Modal
+                isOpen={isFormOpen}
+                onClose={handleCloseForm}
+                className="max-w-4xl"
+                title={editingProduct ? 'Editar Produto' : (productFormDefaults?.is_raw_material ? 'Novo Insumo/Produto' : 'Novo Produto')}
+            >
                 <ProductForm
-                    initialData={editingProduct || {}}
+                    initialData={editingProduct || productFormDefaults || {}}
                     categories={categories}
                     onSave={handleSave}
                     onCancel={handleCloseForm}
                     saving={saving}
                 />
-            </Modal >
+            </Modal>
 
             {/* handleExport definition moved here */}
 

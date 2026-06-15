@@ -23,6 +23,8 @@ dist-ssr
 *.sln
 *.sw?
 
+dist_electron/
+
 # Build/Debug Artifacts
 build_*.log
 build_*.txt

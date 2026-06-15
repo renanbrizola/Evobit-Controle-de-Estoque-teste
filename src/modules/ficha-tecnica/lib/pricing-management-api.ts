@@ -1,7 +1,5 @@
 'use client';
 
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
-
 export interface PricingSimulationPayload {
   recipeVersionId: string;
   pricingUnit?: string;
@@ -76,7 +74,7 @@ export interface PriceRow {
   } | null;
 }
 
-export async function simulatePricing(payload: PricingSimulationPayload) {
+export async function simulatePricing(_payload: PricingSimulationPayload) {
   const response = { data: { data: { unitCost: 15.5, suggestedPrice: 45.9, marginPercent: 30, markupFactor: 3, cmvPercent: 33, marginValue: 13.5, isViable: true, alerts: [], scenarios: [] } } };
   return response.data.data;
 }
@@ -91,12 +89,12 @@ export async function listPrices() {
   return response.data.data;
 }
 
-export async function approvePrice(id: string) {
-  const response = await api.post<{ success: boolean; data: PriceRow }>(`/pricing/${id}/approve`);
-  return response.data.data;
+export async function approvePrice(_id: string): Promise<PriceRow> {
+  // TODO(precificação): persistir aprovação de preço na API real do Evobit.
+  throw new Error('Aprovação de preço ainda não está disponível no Evobit.');
 }
 
-export async function activatePrice(id: string) {
-  const response = await api.post<{ success: boolean; data: PriceRow }>(`/pricing/${id}/activate`);
-  return response.data.data;
+export async function activatePrice(_id: string): Promise<PriceRow> {
+  // TODO(precificação): persistir ativação de preço na API real do Evobit.
+  throw new Error('Ativação de preço ainda não está disponível no Evobit.');
 }
