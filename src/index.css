@@ -1,0 +1,412 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;800&family=Poppins:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-brand-light text-brand-dark font-sans antialiased;
+  }
+
+  @media print {
+
+    /* Hide EVERYTHING by default */
+    body * {
+      visibility: hidden;
+    }
+
+    /* Unhide printable area and its children */
+    #root,
+    #root * {
+      visibility: visible;
+    }
+
+    /* Specific Hides */
+    .no-print,
+    nav,
+    header,
+    aside,
+    .sidebar,
+    .print\:hidden,
+    button,
+    .flex.gap-2,
+    .w-full.md\:w-48,
+    .card-header,
+    .fixed,
+    .sticky,
+    [role="dialog"] {
+      display: none !important;
+    }
+
+    /* Reset Layout for Print */
+    body,
+    #root {
+      background: white !important;
+      color: black !important;
+      height: auto !important;
+      overflow: visible !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+
+    .card,
+    .glass-card {
+      box-shadow: none !important;
+      border: none !important;
+      background: white !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+
+    /* Ensure Table is visible and styled */
+    table {
+      visibility: visible !important;
+      width: 100% !important;
+      font-size: 10pt !important;
+      border-collapse: collapse !important;
+    }
+
+    thead {
+      display: table-header-group !important;
+    }
+
+    tr {
+      break-inside: avoid !important;
+    }
+
+    th,
+    td {
+      visibility: visible !important;
+      padding: 4px 8px !important;
+      border: 1px solid #000 !important;
+      color: black !important;
+    }
+
+    /* Hide actions column */
+    td:last-child,
+    th:last-child {
+      display: none !important;
+    }
+  }
+
+  :root {
+    /* Novo Design System (Projeto Ficha Técnica) */
+    --bg-app: #f5f2eb;
+    --bg-surface: #ffffff;
+    --bg-subtle: #fbf9f5;
+    --line-soft: #d9d5cd;
+    --line-strong: #bbb4a8;
+    --text-strong: #1b2329;
+    --text-muted: #6a7781;
+    --text-soft: #99a3aa;
+    --radius-panel: 12px;
+    --radius-control: 10px;
+
+    /* Mapeamento de Tokens Antigos do Evobit -> Nova Paleta Mineral/Cobre */
+    /* Dark Theme Default */
+    --color-dark: 27 35 41; /* ink-900 para fundo escuro */
+    --color-primary: 35 86 93; /* primary-700 (#23565D) ao invés do Dourado */
+    --color-secondary: 166 103 49; /* accent-700 (#A66731) cobre/argila */
+    --color-light: 245 242 235; /* paper-0 */
+    /* Sidebar */
+    --sidebar-bg: #162f35;
+    --sidebar-line: rgba(255, 255, 255, 0.08);
+    --sidebar-text: rgba(247, 243, 236, 0.7);
+    --sidebar-text-strong: #f7f3ec;
+  }
+}
+
+/* Premium Themes */
+
+/* Light Theme (Clean & Professional - Apple Style) */
+[data-theme='light'] {
+  --color-dark: 245 242 235; /* paper-0 background */
+  --color-light: 27 35 41; /* text-strong */
+  --color-primary: 35 86 93; /* primary-700 */
+  --color-secondary: 166 103 49; /* accent-700 */
+  --color-rose: 170 69 62; /* danger-700 */
+}
+
+/* Light Theme Overrides */
+[data-theme='light'] body {
+  background-color: var(--bg-app);
+}
+
+[data-theme='light'] .glass-card {
+  background-color: var(--bg-surface);
+  backdrop-filter: none;
+  border: 1px solid var(--line-soft);
+  box-shadow: 0 1px 0 rgba(27, 35, 41, 0.06), 0 8px 24px rgba(27, 35, 41, 0.04);
+}
+
+[data-theme='light'] .glass-effect {
+  background-color: var(--bg-surface);
+  backdrop-filter: none;
+  border-bottom: 1px solid var(--line-soft);
+  box-shadow: 0 1px 0 rgba(27, 35, 41, 0.06);
+}
+
+/* Input Styling - Clean White with Shadow */
+[data-theme='light'] input,
+[data-theme='light'] select,
+[data-theme='light'] textarea {
+  background-color: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  color: #101010;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+[data-theme='light'] input:focus,
+[data-theme='light'] select:focus,
+[data-theme='light'] textarea:focus {
+  border-color: rgba(212, 175, 55, 0.5);
+  /* Gold Trace */
+  box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.1);
+}
+
+[data-theme='light'] input::placeholder {
+  color: #9CA3AF;
+  /* Gray-400 */
+}
+
+/* Text Contrast Enforcement */
+[data-theme='light'] .text-white {
+  color: #111111 !important;
+}
+
+[data-theme='light'] .text-gray-300,
+[data-theme='light'] .text-gray-400 {
+  color: #4B5563 !important;
+  /* Gray-600 */
+}
+
+[data-theme='light'] .text-gray-500 {
+  color: #374151 !important;
+  /* Gray-700 */
+}
+
+/* Dark Theme Overrides - High Contrast */
+[data-theme='dark'] .text-black {
+  color: white !important;
+}
+
+[data-theme='dark'] .text-gray-700,
+[data-theme='dark'] .text-gray-600 {
+  color: #D1D5DB !important;
+  /* Gray-300 */
+}
+
+[data-theme='dark'] .bg-white {
+  background-color: #18181B !important;
+  /* Zinc 900 */
+  border-color: #27272A;
+  /* Zinc 800 */
+}
+
+/* High Contrast Text for Dark Mode */
+[data-theme='dark'] body {
+  color: #F4F4F5;
+  /* Zinc 100 */
+}
+
+[data-theme='dark'] input,
+[data-theme='dark'] select,
+[data-theme='dark'] textarea,
+[data-theme='dark'] .card,
+[data-theme='dark'] .bg-card {
+  background-color: #18181B;
+  /* Zinc 900 */
+  border-color: #27272A;
+  /* Zinc 800 */
+  color: #F4F4F5;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-serif font-bold;
+}
+
+/* Specific Gold Highlights */
+.text-gold {
+  color: rgb(var(--color-primary));
+}
+
+/* Premium Glass Effect (Dark Default) */
+.glass-effect {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line-soft);
+}
+
+.glass-card {
+  background-color: var(--bg-surface);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius-panel);
+  transition: all 500ms ease-out;
+}
+
+/* Active/Hover states for cards */
+.glass-card:hover {
+  border-color: rgb(var(--color-primary) / 0.5);
+}
+
+
+@layer utilities {
+  .shadow-soft {
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+  }
+
+  .shadow-active {
+    box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.5);
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.15);
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-brand-primary to-brand-secondary;
+  }
+}
+
+/* Custom Scrollbar - Improved Usability */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 dark:bg-[#101010];
+  border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-400 dark:bg-brand-primary/30 rounded-full hover:bg-gray-500 dark:hover:bg-brand-primary/50 transition-colors;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:active {
+  @apply bg-gray-600 dark:bg-brand-primary/60;
+}
+
+/* Light theme scrollbar */
+[data-theme='light'] ::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb {
+  background-color: #9ca3af;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+[data-theme='light'] ::-webkit-scrollbar-thumb:hover {
+  background-color: #6b7280;
+}
+
+/* Dark theme scrollbar */
+[data-theme='dark'] ::-webkit-scrollbar-track {
+  background-color: #0a0a0a;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background-color: rgba(212, 175, 55, 0.3);
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(212, 175, 55, 0.5);
+}
+
+/* Print Styles */
+@media print {
+
+  html,
+  body,
+  #root,
+  main,
+  .h-screen,
+  .min-h-screen {
+    height: auto !important;
+    overflow: visible !important;
+    min-height: 0 !important;
+    background-color: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Hide Navigation & non-essentials */
+  nav,
+  aside,
+  .sidebar,
+  .header-user,
+  .no-print,
+  button,
+  .flex-col>.gap-4>button {
+    display: none !important;
+  }
+
+  /* Adjust Layout */
+  .flex,
+  .flex-col,
+  .flex-1 {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  /* Cards */
+  .card,
+  .glass-card,
+  .bg-white {
+    box-shadow: none !important;
+    border: 1px solid #ddd !important;
+    break-inside: avoid;
+  }
+
+  /* Table */
+  table {
+    width: 100% !important;
+    font-size: 9pt !important;
+  }
+
+  th,
+  td {
+    padding: 6px !important;
+    border: 1px solid #eee !important;
+  }
+
+  /* Hide Actions */
+  td:last-child,
+  th:last-child {
+    display: none !important;
+  }
+
+  /* Text Colors */
+  .text-brand-primary,
+  .text-brand-dark {
+    color: black !important;
+  }
+
+  .text-red-600 {
+    color: #dc2626 !important;
+  }
+
+  .text-green-600 {
+    color: #16a34a !important;
+  }
+
+  /* Reset Animations */
+  * {
+    transition: none !important;
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

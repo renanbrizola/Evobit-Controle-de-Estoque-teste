@@ -1,0 +1,16 @@
+{
+    "name": "Evobit App",
+    "short_name": "Evobit App",
+    "start_url": ".",
+    "display": "standalone",
+    "background_color": "#FFF5F7",
+    "theme_color": "#880E4F",
+    "description": "Sistema de Gestão de Estoque",
+    "icons": [
+        {
+            "src": "/vite.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml"
+        }
+    ]
+}

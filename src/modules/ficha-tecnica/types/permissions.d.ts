@@ -1,0 +1,38 @@
+export declare const Permissions: {
+    readonly INVENTORY_VIEW: "inventory:view";
+    readonly INVENTORY_CREATE: "inventory:create";
+    readonly INVENTORY_EDIT: "inventory:edit";
+    readonly INVENTORY_DELETE: "inventory:delete";
+    readonly RECIPE_VIEW: "recipe:view";
+    readonly RECIPE_CREATE: "recipe:create";
+    readonly RECIPE_EDIT: "recipe:edit";
+    readonly RECIPE_DELETE: "recipe:delete";
+    readonly RECIPE_APPROVE: "recipe:approve";
+    readonly RECIPE_PRINT: "recipe:print";
+    readonly COST_VIEW: "cost:view";
+    readonly PRICING_VIEW: "pricing:view";
+    readonly PRICING_CREATE: "pricing:create";
+    readonly PRICING_APPROVE: "pricing:approve";
+    readonly PRICE_CHANGE: "pricing:change";
+    readonly PROMOTION_VIEW: "promotion:view";
+    readonly PROMOTION_CREATE: "promotion:create";
+    readonly PROMOTION_EDIT: "promotion:edit";
+    readonly PROMOTION_APPROVE: "promotion:approve";
+    readonly PROMOTION_PUBLISH: "promotion:publish";
+    readonly SUPPLIER_VIEW: "supplier:view";
+    readonly SUPPLIER_CREATE: "supplier:create";
+    readonly SUPPLIER_EDIT: "supplier:edit";
+    readonly USER_VIEW: "user:view";
+    readonly USER_CREATE: "user:create";
+    readonly USER_EDIT: "user:edit";
+    readonly USER_DELETE: "user:delete";
+    readonly ROLE_MANAGE: "role:manage";
+    readonly REPORT_VIEW: "report:view";
+    readonly REPORT_EXPORT: "report:export";
+    readonly AUDIT_VIEW: "audit:view";
+    readonly IMPORT_CREATE: "import:create";
+    readonly IMPORT_VIEW: "import:view";
+};
+export type Permission = (typeof Permissions)[keyof typeof Permissions];
+export declare const RolePermissions: Record<string, Permission[]>;
+//# sourceMappingURL=permissions.d.ts.map
