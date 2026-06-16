@@ -1,6 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import Layout from '../components/layout/Layout';
 import { Button } from '../components/ui/Button';
 import {
     Card,
@@ -20,7 +19,12 @@ const Admin = () => {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
-    const fetchProfiles = useCallback(async () => {
+    useEffect(() => {
+        fetchProfiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const fetchProfiles = async () => {
         try {
             setLoading(true);
             const { data, error } = await supabase
@@ -36,13 +40,7 @@ const Admin = () => {
         } finally {
             setLoading(false);
         }
-    }, [t]);
-
-    useEffect(() => {
-        (async () => {
-            await fetchProfiles();
-        })();
-    }, [fetchProfiles]);
+    };
 
     const handleUpdateStatus = async (id, newStatus) => {
         try {
@@ -82,8 +80,7 @@ const Admin = () => {
     };
 
     return (
-        <Layout title={t('admin', 'title')} subtitle={t('admin', 'subtitle')}>
-            <div className="space-y-6 animate-in fade-in duration-500">
+        <div className="space-y-6 animate-in fade-in duration-500">
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -215,8 +212,7 @@ const Admin = () => {
                         )}
                     </CardContent>
                 </Card>
-            </div>
-        </Layout>
+        </div>
     );
 };
 

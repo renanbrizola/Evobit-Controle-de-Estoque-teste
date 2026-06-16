@@ -97,14 +97,12 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
         setFacingMode(prev => prev === 'environment' ? 'user' : 'environment');
     }, []);
 
-    // Restart camera when facing mode changes. Intentionally keyed only on
-    // facingMode: depending on `cameraStarted`/`startCamera` would restart the
-    // camera every time startCamera toggles cameraStarted, causing a loop.
+    // Restart camera when facing mode changes
     useEffect(() => {
         if (mode === 'camera' && cameraStarted) {
             startCamera();
         }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [facingMode]);
 
     // Cleanup when unmounting or switching away from camera
@@ -112,14 +110,16 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
         return () => {
             stopCamera();
         };
-    }, [stopCamera]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Stop camera when switching to USB mode
     useEffect(() => {
         if (mode !== 'camera') {
             stopCamera();
         }
-    }, [mode, stopCamera]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [mode]);
 
     // ─── USB/BLUETOOTH SCANNER MODE ──────────────────
     useEffect(() => {

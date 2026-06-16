@@ -7,6 +7,7 @@ import clsx from 'clsx';
 import { toast } from 'sonner';
 
 const PaymentModal = ({ isOpen, onClose, total, onConfirm }) => {
+
     // State
     const [payments, setPayments] = useState([]);
     const [currentMethod, setCurrentMethod] = useState('cash'); // 'cash' | 'credit_card' | 'debit_card' | 'pix' | 'credit'

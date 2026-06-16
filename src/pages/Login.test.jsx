@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Login from './Login';
 import { AuthProvider } from '../contexts/AuthContext';
+import { LanguageProvider } from '../contexts/LanguageContext';
 import { BrowserRouter } from 'react-router-dom';
 
 
@@ -39,9 +40,11 @@ describe('Login Component', () => {
     it('renders login form correctly', async () => {
         render(
             <BrowserRouter>
-                <AuthProvider>
-                    <Login />
-                </AuthProvider>
+                <LanguageProvider>
+                    <AuthProvider>
+                        <Login />
+                    </AuthProvider>
+                </LanguageProvider>
             </BrowserRouter>
         );
 
@@ -58,9 +61,11 @@ describe('Login Component', () => {
 
         render(
             <BrowserRouter>
-                <AuthProvider>
-                    <Login />
-                </AuthProvider>
+                <LanguageProvider>
+                    <AuthProvider>
+                        <Login />
+                    </AuthProvider>
+                </LanguageProvider>
             </BrowserRouter>
         );
 
@@ -87,9 +92,11 @@ describe('Login Component', () => {
 
         render(
             <BrowserRouter>
-                <AuthProvider>
-                    <Login />
-                </AuthProvider>
+                <LanguageProvider>
+                    <AuthProvider>
+                        <Login />
+                    </AuthProvider>
+                </LanguageProvider>
             </BrowserRouter>
         );
 

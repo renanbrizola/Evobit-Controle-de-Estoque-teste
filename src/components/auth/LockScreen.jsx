@@ -6,25 +6,21 @@ import { toast } from 'sonner';
 import { useLanguage } from '../../contexts/LanguageContext'; // Added import
 
 const LockScreen = () => {
-    const { isLocked } = useSecurity();
-
-    // Mount the panel only while locked so its PIN state resets naturally on
-    // each lock (fresh mount) instead of via a setState-in-effect.
-    if (!isLocked) return null;
-    return <LockPanel />;
-};
-
-const LockPanel = () => {
     const { t } = useLanguage(); // Added hook
-    const { unlockApp } = useSecurity();
+    const { isLocked, unlockApp } = useSecurity();
     const [pin, setPin] = useState(['', '', '', '']);
     const [error, setError] = useState(false);
     const inputRefs = useRef([]);
 
     useEffect(() => {
-        const timer = setTimeout(() => inputRefs.current[0]?.focus(), 100);
-        return () => clearTimeout(timer);
-    }, []);
+        if (isLocked) {
+            /* eslint-disable react-hooks/set-state-in-effect */
+            setPin(['', '', '', '']);
+            setError(false);
+            /* eslint-enable react-hooks/set-state-in-effect */
+            setTimeout(() => inputRefs.current[0]?.focus(), 100);
+        }
+    }, [isLocked]);
 
     const handleChange = (index, value) => {
         if (value.length > 1) value = value.slice(-1); // Take last char if multiple
@@ -67,6 +63,8 @@ const LockPanel = () => {
         }
     };
 
+    if (!isLocked) return null;
+
     return (
         <div className="fixed inset-0 z-[100] bg-brand-dark/95 backdrop-blur-xl flex flex-col items-center justify-center animate-in fade-in duration-300">
             <div className="text-center space-y-8 p-8">
@@ -92,7 +90,7 @@ const LockPanel = () => {
                             value={digit}
                             onChange={(e) => handleChange(index, e.target.value)}
                             onKeyDown={(e) => handleKeyDown(index, e)}
-                            className={`w-14 h-16 text-center text-3xl font-bold bg-white/5 border-2 rounded-2xl outline-none transition-all duration-200
+                            className={`w-14 h-16 text-center text-3xl font-bold bg-white/5 border-2 rounded-2xl outline-none transition-all duration-200 
                                 ${error
                                     ? 'border-brand-danger text-brand-danger animate-shake'
                                     : 'border-white/10 focus:border-brand-primary text-white focus:bg-white/10 focus:shadow-glow'

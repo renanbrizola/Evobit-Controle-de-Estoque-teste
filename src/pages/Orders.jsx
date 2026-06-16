@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Search, Plus, Filter, FileText, ShoppingCart, CheckCircle,
     Clock, XCircle, MoreVertical, Printer, Edit, Trash, ArrowRight
@@ -35,7 +35,12 @@ const Orders = () => {
     const [filterType, setFilterType] = useState('ALL'); // ALL, QUOTE, SALE
     const [searchTerm, setSearchTerm] = useState('');
 
-    const loadOrders = useCallback(async () => {
+    useEffect(() => {
+        loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [filterType]);
+
+    const loadOrders = async () => {
         try {
             setLoading(true);
             const filters = {};
@@ -49,13 +54,7 @@ const Orders = () => {
         } finally {
             setLoading(false);
         }
-    }, [filterType]);
-
-    useEffect(() => {
-        (async () => {
-            await loadOrders();
-        })();
-    }, [loadOrders]);
+    };
 
     const handleEdit = (order) => {
         // Navigate to Sales screen with order data to edit/convert

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import ProductForm from '../components/forms/ProductForm';
 import ProviderForm from '../components/forms/ProviderForm';
 import { Card } from '../components/ui/Card';
@@ -35,7 +35,6 @@ const Movements = () => {
 
     // Quick Provider Add State
     const [isAddingProvider, setIsAddingProvider] = useState(false);
-    const [newProviderName, setNewProviderName] = useState('');
 
 
 
@@ -68,13 +67,16 @@ const Movements = () => {
         }
     };
 
-    // 1. Restore State from LocalStorage on Mount - SAFELY
+    // 1. Load Data on Mount
     useEffect(() => {
+        loadData();
+        // Restore State from LocalStorage - SAFELY
         const savedCart = safeParse(STORAGE_KEYS.CART, []);
         const savedMode = localStorage.getItem(STORAGE_KEYS.MODE);
 
         if (Array.isArray(savedCart)) setCart(savedCart);
         if (savedMode) setMode(savedMode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // 2. Save Data on Change
@@ -113,7 +115,7 @@ const Movements = () => {
 
 
     // Load Data on Mount
-    const loadData = useCallback(async () => {
+    const loadData = async () => {
         try {
             setLoadingData(true);
             const [prods, provs, cats] = await Promise.all([
@@ -130,13 +132,7 @@ const Movements = () => {
         } finally {
             setLoadingData(false);
         }
-    }, [t]);
-
-    useEffect(() => {
-        (async () => {
-            await loadData();
-        })();
-    }, [loadData]);
+    };
 
     // Product Form State in Movements
     const [isAddingProduct, setIsAddingProduct] = useState(false);
@@ -197,24 +193,6 @@ const Movements = () => {
             toast.success("Produto encontrado!");
         } else {
             toast.info("Produto não encontrado. Preencha os dados ou cadastre-o.");
-        }
-    };
-
-    const _handleNewProvider = async () => {
-        if (!newProviderName || newProviderName.length < 3) {
-            toast.error("Nome do fornecedor muito curto");
-            return;
-        }
-        try {
-            const data = await api.providers.create({ name: newProviderName });
-            setProviders([...providers, data]);
-            setProvider(data.id); // Auto-select ID
-            setIsAddingProvider(false);
-            setNewProviderName('');
-            toast.success(t('providers', 'toast.created'));
-        } catch (error) {
-            toast.error(error.message || t('common', 'error'));
-            console.error(error);
         }
     };
 

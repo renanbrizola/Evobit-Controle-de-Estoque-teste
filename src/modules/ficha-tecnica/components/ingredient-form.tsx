@@ -60,6 +60,7 @@ export function IngredientForm({
   ingredientSourceValue,
   selectedLabel,
   currentRecipeId,
+  isEditing,
   isEditable,
   loading,
   comboboxLabel = 'Origem',

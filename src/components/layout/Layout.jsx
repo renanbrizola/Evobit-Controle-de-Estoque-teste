@@ -14,6 +14,7 @@ const Layout = () => {
     const { companyName } = useTheme();
     const { t } = useLanguage();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
     const [isModuleConfirmOpen, setIsModuleConfirmOpen] = useState(false);
     const navigate = useNavigate();
@@ -135,7 +136,7 @@ const Layout = () => {
     ];
 
     if (user?.role === 'admin') {
-        allNavItems.push({ path: '/admin', label: t('menu', 'admin'), icon: Users, alwaysVisible: true });
+        allNavItems.push({ path: '/app/admin', label: t('menu', 'admin'), icon: Users, alwaysVisible: true });
     }
 
     // Filter items based on current context

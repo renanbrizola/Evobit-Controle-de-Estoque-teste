@@ -1,3 +1,5 @@
+import { formatBRL } from '../utils/index';
+
 import type {
   AccentTone,
   SidebarMetric,

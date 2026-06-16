@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Movements from './Movements';
+import { LanguageProvider } from '../contexts/LanguageContext';
 import { BrowserRouter } from 'react-router-dom';
 
 // Mock API Service
@@ -32,19 +33,30 @@ vi.mock('sonner', () => ({
     }
 }));
 
-const renderHome = () => {
+// Mock contextos que dependem de serviços externos (Theme: moeda, Auth: sessão Supabase)
+vi.mock('../contexts/ThemeContext', () => ({
+    useTheme: () => ({ getCurrencySymbol: () => 'R$' })
+}));
+
+vi.mock('../contexts/AuthContext', () => ({
+    useAuth: () => ({ user: { id: 'test-user' } })
+}));
+
+const renderMovements = () => {
     return render(
         <BrowserRouter>
-            <Movements />
+            <LanguageProvider>
+                <Movements />
+            </LanguageProvider>
         </BrowserRouter>
     );
 };
 
-describe('Home Component (Cart Logic)', () => {
+describe('Movements Component (Cart Logic)', () => {
     it('should render correctly', async () => {
-        renderHome();
+        renderMovements();
 
-        // Wait for the mode selector to render (entry/exit toggle buttons).
+        // Botões de modo (Entrada / Saída) sempre presentes
         await waitFor(() => {
             expect(screen.getByRole('button', { name: /entrada/i })).toBeInTheDocument();
         });
@@ -55,17 +67,14 @@ describe('Home Component (Cart Logic)', () => {
     // Note: Testing complex interaction involves selecting from dropdown which is tricky in jsdom without user-event
     // complex setup. We will do a basic sanity check of rendering.
 
-    it('should switch modes', async () => {
-        renderHome();
+    it('should switch modes', () => {
+        renderMovements();
+        fireEvent.click(screen.getByRole('button', { name: /entrada/i }));
+        // Em modo ENTRADA, o campo de valor total (placeholder 0,00) fica visível
+        expect(screen.getByPlaceholderText('0,00')).toBeInTheDocument();
 
-        const btnEntry = await screen.findByRole('button', { name: /entrada/i });
-        fireEvent.click(btnEntry);
-        // Entry mode shows the total-value field (label "Total (R$)").
-        expect(screen.getByText(/Total \(/i)).toBeInTheDocument();
-
-        const btnExit = screen.getByRole('button', { name: /saída/i });
-        fireEvent.click(btnExit);
-        // Exit mode hides the total-value field.
-        expect(screen.queryByText(/Total \(/i)).not.toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: /saída/i }));
+        // Em modo SAÍDA, o campo de valor some
+        expect(screen.queryByPlaceholderText('0,00')).not.toBeInTheDocument();
     });
 });

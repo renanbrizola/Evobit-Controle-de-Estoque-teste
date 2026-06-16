@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import TeamSettings from './TeamSettings';
 import { AuthProvider } from '../contexts/AuthContext';
+import { LanguageProvider } from '../contexts/LanguageContext';
 import { BrowserRouter } from 'react-router-dom';
 
 // Mock dependencies
@@ -46,7 +47,9 @@ describe('TeamSettings Component', () => {
     it('renders correctly', async () => {
         render(
             <BrowserRouter>
-                <TeamSettings />
+                <LanguageProvider>
+                    <TeamSettings />
+                </LanguageProvider>
             </BrowserRouter>
         );
 
@@ -64,7 +67,9 @@ describe('TeamSettings Component', () => {
 
         render(
             <BrowserRouter>
-                <TeamSettings />
+                <LanguageProvider>
+                    <TeamSettings />
+                </LanguageProvider>
             </BrowserRouter>
         );
 
@@ -85,7 +90,9 @@ describe('TeamSettings Component', () => {
 
         render(
             <BrowserRouter>
-                <TeamSettings />
+                <LanguageProvider>
+                    <TeamSettings />
+                </LanguageProvider>
             </BrowserRouter>
         );
 

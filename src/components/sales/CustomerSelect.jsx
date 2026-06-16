@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Search, Plus, User, X, Check, Loader2 } from 'lucide-react';
 import { CustomerService } from '../../services/customers';
 import { Button } from '../ui/Button';
@@ -19,25 +19,14 @@ const CustomerSelect = ({ onSelect, selectedCustomer }) => {
 
     const dropdownRef = useRef(null);
 
-    const loadCustomers = useCallback(async () => {
-        setLoading(true);
-        try {
-            const data = await CustomerService.list(search);
-            setResults(data);
-        } catch (err) {
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    }, [search]);
-
     // Debounced search
     useEffect(() => {
         const timer = setTimeout(() => {
             if (isOpen) loadCustomers();
         }, 500);
         return () => clearTimeout(timer);
-    }, [isOpen, loadCustomers]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search, isOpen]);
 
     // Close dropdown on outside click
     useEffect(() => {
@@ -49,6 +38,18 @@ const CustomerSelect = ({ onSelect, selectedCustomer }) => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    const loadCustomers = async () => {
+        setLoading(true);
+        try {
+            const data = await CustomerService.list(search);
+            setResults(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
     const handleCreate = async () => {
         if (!newCustomer.name) return toast.error('Nome é obrigatório');

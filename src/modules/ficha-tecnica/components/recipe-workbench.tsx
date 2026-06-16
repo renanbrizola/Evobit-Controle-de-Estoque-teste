@@ -3,8 +3,10 @@
 import { Link } from 'react-router-dom';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  useCallback,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -55,6 +57,7 @@ import { getApiErrorMessage } from '../lib/api-errors';
 import {
   type InventoryCatalogItem,
   listCategories,
+  searchInventoryItems,
   listUoms,
 } from '../lib/inventory-management-api';
 import {
@@ -293,9 +296,6 @@ export function RecipeWorkbench({
 
     const recipeIdParam = searchParams.get('recipeId');
     void bootstrap(recipeIdParam || undefined);
-    // bootstrap is a stable loader recreated each render; keying the effect on
-    // the navigation/session inputs is intentional to avoid re-bootstrap loops.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDemoSession, productType, searchParams]);
 
   function navigateCompoundStage(stage: CompoundStageKey) {

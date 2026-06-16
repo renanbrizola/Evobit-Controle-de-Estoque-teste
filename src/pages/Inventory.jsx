@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -69,10 +69,10 @@ const Inventory = () => {
         return () => clearTimeout(timer);
     }, [search]);
 
-    const loadData = useCallback(async () => {
+    const loadData = async () => {
         setLoading(true);
         try {
-            // Load Providers and Categories only once or if needed,
+            // Load Providers and Categories only once or if needed, 
             // but for simplicity let's keep loading them. 
             // ideally we should separate this, but let's keep it safe.
             // Actually, to avoid flickering, let's load aux data only on mount if possible, 
@@ -110,7 +110,7 @@ const Inventory = () => {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, itemsPerPage, debouncedSearch, categoryFilter, stockFilter, sortConfig, providers, categories, t]);
+    };
 
     // Bulk Actions
     const handleSelectAll = (e) => {
@@ -146,10 +146,9 @@ const Inventory = () => {
 
     // Initial Load & Updates
     useEffect(() => {
-        (async () => {
-            await loadData();
-        })();
-    }, [loadData]);
+        loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentPage, debouncedSearch, categoryFilter, stockFilter, sortConfig]);
 
 
     // Effect to handle navigation from Dashboard
@@ -336,7 +335,7 @@ const Inventory = () => {
                         onChange={e => setStockFilter(e.target.value)}
                     >
                         <option value="ALL" className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-300">{t('common', 'all')}</option>
-                        <option value="LOW" className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-300">⚠️ {t('inventory', 'status.lowStock')}</option>
+                        <option value="LOW" className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-300">âš ï¸ {t('inventory', 'status.lowStock')}</option>
                         <option value="EXPIRING" className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-300">â³ {t('dashboard', 'expiring')}</option>
                     </select>
                 </div>
@@ -379,11 +378,11 @@ const Inventory = () => {
             <div id="printable-content" className="w-full">
                 {/* Print Header - Visible only on print */}
                 <div className="hidden print:block mb-8 text-center pt-8">
-                    <h1 className="text-2xl font-bold text-black mb-2">Relatório de Estoque</h1>
+                    <h1 className="text-2xl font-bold text-black mb-2">RelatÃ³rio de Estoque</h1>
                     <p className="text-sm text-gray-600">
-                        {stockFilter === 'LOW' ? '⚠️ Produtos com Estoque Baixo' : 'Posição Geral de Estoque'}
+                        {stockFilter === 'LOW' ? 'âš ï¸ Produtos com Estoque Baixo' : 'PosiÃ§Ã£o Geral de Estoque'}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">Gerado em: {new Date().toLocaleDateString()} às {new Date().toLocaleTimeString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">Gerado em: {new Date().toLocaleDateString()} Ã s {new Date().toLocaleTimeString()}</p>
                 </div>
 
                 <div className="rounded-[2rem] shadow-glass overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white dark:bg-[#121212]/50 backdrop-blur-md border border-gray-200 dark:border-white/10">

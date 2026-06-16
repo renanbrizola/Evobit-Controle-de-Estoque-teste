@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useModules } from '../contexts/ModuleContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -17,17 +17,14 @@ const Modules = () => {
     const [selectedModule, setSelectedModule] = useState(null);
     const [isBuyModalOpen, setIsBuyModalOpen] = useState(false);
 
-    // Define moduleCards BEFORE useEffect so it can be used inside it.
-    // Memoized on the activation flags so its identity is stable across renders.
-    const inventoryActive = hasModule('inventory');
-    const techActive = hasModule('technical_sheet');
-    const moduleCards = useMemo(() => [
+    // Define moduleCards BEFORE useEffect so it can be used inside it
+    const moduleCards = [
         {
             key: 'inventory',
             name: 'Estoque',
             description: 'Controle total de produtos, fornecedores e inventário.',
             icon: Package,
-            active: inventoryActive,
+            active: hasModule('inventory'),
             price: 147,
             path: '/app/dashboard',
             color: 'bg-blue-500',
@@ -60,7 +57,7 @@ const Modules = () => {
             name: 'Ficha Técnica',
             description: 'Fichas técnicas, engenharia de cardápio e controle de fabricação.',
             icon: ChefHat,
-            active: techActive,
+            active: hasModule('technical_sheet'),
             price: 97,
             path: '/app/ficha-tecnica/dashboard',
             color: 'bg-orange-500',
@@ -77,28 +74,29 @@ const Modules = () => {
             color: 'bg-amber-500',
             textColor: 'text-amber-500'
         }
-    ], [inventoryActive, techActive]);
+    ];
 
-    // Handle redirect from ModuleGuard. This effect reacts to the one-time
-    // navigation signal in location.state, so opening the buy modal via
-    // setState here is intentional (not a derived-state anti-pattern).
+    // Handle redirect from ModuleGuard
     useEffect(() => {
-        const moduleKey = location.state?.moduleLocked;
-        if (!moduleKey) return;
-        const module = moduleCards.find(m => m.key === moduleKey);
-        if (!module) return;
-
-        if (module.comingSoon) {
-            toast.info(`O módulo ${module.name} está em desenvolvimento e estará disponível em breve.`);
-        } else {
-            /* eslint-disable react-hooks/set-state-in-effect */
-            setSelectedModule(module);
-            setIsBuyModalOpen(true);
-            /* eslint-enable react-hooks/set-state-in-effect */
+        if (location.state?.moduleLocked) {
+            const moduleKey = location.state.moduleLocked;
+            const module = moduleCards.find(m => m.key === moduleKey);
+            if (module) {
+                if (module.comingSoon) {
+                    toast.info(`O módulo ${module.name} está em desenvolvimento e estará disponível em breve.`);
+                } else {
+                    setSelectedModule(module);
+                    setIsBuyModalOpen(true);
+                }
+                // Optional: Clear state to prevent reopening on refresh
+                window.history.replaceState({}, document.title);
+            }
         }
-        // Clear state to prevent reopening on refresh
-        window.history.replaceState({}, document.title);
-    }, [location.state, moduleCards]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [location.state]); // Depend on location.state
+    // Note: moduleCards is not in dependency array to avoid loops, 
+    // effectively it's constant per render but reconstructed. 
+    // Since we only care about location.state trigger, this is fine.
 
     const handleModuleClick = (module) => {
         if (module.comingSoon) {
@@ -158,14 +156,16 @@ const Modules = () => {
                         Gerenciar Produtos
                     </button>
 
-                    {/* DEV BUTTON */}
-                    <button
-                        onClick={resetModules}
-                        className="p-2 border border-red-200 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
-                        title="Dev: Resetar Módulos"
-                    >
-                        RESET
-                    </button>
+                    {/* DEV BUTTON — visível apenas em builds de desenvolvimento */}
+                    {import.meta.env.DEV && (
+                        <button
+                            onClick={resetModules}
+                            className="p-2 border border-red-200 bg-red-50 text-red-600 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors"
+                            title="Dev: Resetar Módulos"
+                        >
+                            RESET
+                        </button>
+                    )}
 
                     <button
                         onClick={signOut}

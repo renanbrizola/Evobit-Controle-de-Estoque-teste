@@ -487,16 +487,16 @@ export async function archiveRecipe(id: string) {
 export async function createRecipeVersion(recipeId: string) {
   return (await getRecipe(recipeId)).versions[0];
 }
-export async function submitRecipeVersion(recipeId: string, _versionId: string) {
+export async function submitRecipeVersion(recipeId: string, versionId: string) {
   return (await getRecipe(recipeId)).versions[0];
 }
-export async function approveRecipeVersion(recipeId: string, _versionId: string) {
+export async function approveRecipeVersion(recipeId: string, versionId: string) {
   return (await getRecipe(recipeId)).versions[0];
 }
-export async function recalculateRecipeVersion(recipeId: string, _versionId: string) {
+export async function recalculateRecipeVersion(recipeId: string, versionId: string) {
   return (await getRecipe(recipeId)).versions[0];
 }
-export async function getCostBreakdown(_versionId: string) {
+export async function getCostBreakdown(versionId: string) {
   return { materials: 0, labor: 0, equipment: 0, packaging: 0, overhead: 0, total: 0 };
 }
 
@@ -603,19 +603,19 @@ export async function addRecipeStep(
 }
 
 export async function updateRecipeStep(
-  _recipeId: string,
-  _versionId: string,
-  _stepId: string,
-  _payload: RecipeStepPayload,
+  recipeId: string,
+  versionId: string,
+  stepId: string,
+  payload: RecipeStepPayload,
 ) {
   resetCache();
   return { success: true };
 }
 
 export async function deleteRecipeStep(
-  _recipeId: string,
-  _versionId: string,
-  _stepId: string,
+  recipeId: string,
+  versionId: string,
+  stepId: string,
 ) {
   resetCache();
   return { success: true };

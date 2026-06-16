@@ -17,10 +17,10 @@ export default function ReloadPrompt() {
         },
     });
 
-    const close = React.useCallback(() => {
+    const close = () => {
         setOfflineReady(false);
         setNeedRefresh(false);
-    }, [setOfflineReady, setNeedRefresh]);
+    };
 
     React.useEffect(() => {
         if (offlineReady) {
@@ -41,7 +41,8 @@ export default function ReloadPrompt() {
                 { duration: Infinity, id: 'pwa-update-toast' } // Persistent toast
             );
         }
-    }, [needRefresh, updateServiceWorker, close]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [needRefresh, updateServiceWorker]);
 
     return null; // The toast handles the UI
 }

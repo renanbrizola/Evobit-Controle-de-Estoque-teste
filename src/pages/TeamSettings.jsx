@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -16,7 +16,12 @@ const TeamSettings = () => {
     const [inviteEmail, setInviteEmail] = useState('');
     const [inviting, setInviting] = useState(false);
 
-    const loadData = useCallback(async () => {
+    useEffect(() => {
+        loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const loadData = async () => {
         try {
             setLoading(true);
             const data = await api.teams.list();
@@ -27,13 +32,7 @@ const TeamSettings = () => {
         } finally {
             setLoading(false);
         }
-    }, [t]);
-
-    useEffect(() => {
-        (async () => {
-            await loadData();
-        })();
-    }, [loadData]);
+    };
 
     const handleInvite = async (e) => {
         e.preventDefault();

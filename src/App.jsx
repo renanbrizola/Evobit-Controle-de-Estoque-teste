@@ -9,7 +9,6 @@ import Inventory from './pages/Inventory';
 import Providers from './pages/Providers';
 import Categories from './pages/Categories';
 import History from './pages/History';
-import TechnicalSheetProvisional from './pages/TechnicalSheetProvisional';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -22,12 +21,12 @@ import AccessDenied from './pages/AccessDenied';
 import Admin from './pages/Admin';
 import { Toaster } from 'sonner';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
-import { ThemeProvider } from './contexts/ThemeProvider';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { Loader2 } from 'lucide-react';
 import LicenseGuard from './components/shared/LicenseGuard';
-import { SecurityProvider } from './contexts/SecurityProvider'; // Connect SecurityProvider
-import { LanguageProvider } from './contexts/LanguageProvider';
-import { ModuleProvider } from './contexts/ModuleProvider';
+import { SecurityProvider } from './contexts/SecurityContext'; // Connect SecurityProvider
+import { LanguageProvider } from './contexts/LanguageContext';
+import { ModuleProvider } from './contexts/ModuleContext';
 import ModuleGuard from './components/shared/ModuleGuard';
 import Sales from './pages/Sales';
 import Orders from './pages/Orders'; // Import Orders
@@ -132,9 +131,8 @@ function App() {
 
                   {/* License Guard Wrapper */}
                   <Route element={<LicenseGuard><Outlet /></LicenseGuard>}>
-                    <Route element={<AdminRoute />}>
-                      <Route path="/admin" element={<Admin />} />
-                    </Route>
+                    {/* Legacy /admin redirect — Admin agora vive dentro de /app (shell compartilhado) */}
+                    <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
 
                     <Route element={<ProtectedRoute />}>
                       {/* Module Selection (Lobby) */}
@@ -210,6 +208,11 @@ function App() {
                         </Route>
 
                         <Route path="configuracoes" element={<CompanySettings />} />
+
+                        {/* ADMIN (restrito a admin, dentro do shell do app) */}
+                        <Route element={<AdminRoute />}>
+                          <Route path="admin" element={<SectionErrorBoundary section="admin"><Admin /></SectionErrorBoundary>} />
+                        </Route>
                       </Route>
                     </Route>
                   </Route>

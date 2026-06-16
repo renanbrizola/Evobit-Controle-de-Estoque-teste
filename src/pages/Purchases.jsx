@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { ShoppingCart, Plus, Calendar, FileText, CheckCircle } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -15,7 +15,7 @@ const Purchases = () => {
 
 
 
-    const loadPurchases = useCallback(async () => {
+    const loadPurchases = async () => {
         try {
             const data = await PurchaseService.list();
             setPurchases(data);
@@ -27,13 +27,12 @@ const Purchases = () => {
             console.error(error);
             toast.error('Erro ao carregar compras');
         }
-    }, []);
+    };
 
     useEffect(() => {
-        (async () => {
-            await loadPurchases();
-        })();
-    }, [loadPurchases]);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadPurchases();
+    }, []);
 
     const handleSavePurchase = () => {
         // Reload list to get updated data (providers names etc)

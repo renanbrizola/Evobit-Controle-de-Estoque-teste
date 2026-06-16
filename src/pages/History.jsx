@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
 import { api } from '../services/api';
@@ -21,6 +21,11 @@ const History = () => {
     const [dateFrom, setDateFrom] = useState('');
     const [dateTo, setDateTo] = useState('');
     const [page, setPage] = useState(1);
+
+    useEffect(() => {
+        loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     // Reset page when filters change
     useEffect(() => {
@@ -48,7 +53,7 @@ const History = () => {
         return type;
     };
 
-    const loadData = useCallback(async () => {
+    const loadData = async () => {
         try {
             setLoading(true);
             const data = await api.movements.list();
@@ -59,13 +64,7 @@ const History = () => {
         } finally {
             setLoading(false);
         }
-    }, [t]);
-
-    useEffect(() => {
-        (async () => {
-            await loadData();
-        })();
-    }, [loadData]);
+    };
 
     const handleReverse = async (mov) => {
         const confirmed = window.confirm(

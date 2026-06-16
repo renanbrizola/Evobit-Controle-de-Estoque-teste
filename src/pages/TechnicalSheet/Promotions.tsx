@@ -39,9 +39,6 @@ export default function PromotionsPage() {
       return;
     }
     void bootstrap();
-    // bootstrap is a stable loader recreated each render; running it once per
-    // session change is intentional (avoids re-bootstrap loops).
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isDemoSession]);
 
   const selectedPromotion = useMemo(

@@ -10,6 +10,7 @@ import {
 } from '../types/enums';
 import api from '../lib/api';
 import { listWorkbookInputs } from './inventory-management-api';
+import { fetchWorkbookSections } from './workbook-data-api';
 import {
   depreciationExpenses,
   equipmentEnergyRows,
@@ -293,20 +294,30 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
     setLoading(true);
 
     (async () => {
+      // Insumos + seções reais do workbook (despesas, equipe, utilidades, config).
+      // summary/products ainda derivam do mock (precificação = etapa seguinte).
+      // Carregadas de forma independente: uma falhar NÃO derruba a outra, e o erro
+      // real é logado (em vez de cair silenciosamente no mock).
+      const base = buildMockSnapshot();
+      let inputs = base.inputs;
+      let sections: Partial<WorkbookSnapshotDto> = {};
+
       try {
-        const inputs = await listWorkbookInputs();
-        if (!active) return;
-        // Insumos reais do cadastro do Evobit; demais seções do workbook
-        // (despesas, equipe, utilidades) seguem em mock até a migração delas.
-        setData({ ...buildMockSnapshot(), inputs });
-        setSource('api');
-      } catch {
-        if (!active) return;
-        setData(buildMockSnapshot());
-        setSource('demo');
-      } finally {
-        if (active) setLoading(false);
+        inputs = await listWorkbookInputs();
+      } catch (err) {
+        console.error('[workbook] falha ao carregar insumos reais:', err);
       }
+
+      try {
+        sections = await fetchWorkbookSections();
+      } catch (err) {
+        console.error('[workbook] falha ao carregar seções do workbook (Supabase):', err);
+      }
+
+      if (!active) return;
+      setData({ ...base, inputs, ...sections });
+      setSource('api');
+      setLoading(false);
     })();
 
     return () => {

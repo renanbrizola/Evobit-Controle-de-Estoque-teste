@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { licenseService } from '../../services/license';
 import { Button } from '../ui/Button';
 import { Loader2, Lock } from 'lucide-react';
@@ -10,7 +10,7 @@ const LicenseGuard = ({ children }) => {
 
 
 
-    const checkStatus = useCallback(async () => {
+    const checkStatus = async () => {
         try {
             const result = await licenseService.checkLicense();
             if (result.active) {
@@ -23,13 +23,12 @@ const LicenseGuard = ({ children }) => {
             console.error(error);
             setStatus('error');
         }
-    }, []);
+    };
 
     useEffect(() => {
-        (async () => {
-            await checkStatus();
-        })();
-    }, [checkStatus]);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        checkStatus();
+    }, []);
 
     if (status === 'loading') {
         return <div className="h-screen flex items-center justify-center"><Loader2 className="animate-spin text-brand-primary" size={48} /></div>;

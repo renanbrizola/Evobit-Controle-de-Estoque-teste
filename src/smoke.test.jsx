@@ -24,19 +24,24 @@ vi.mock('./lib/supabaseClient', () => ({
     }
 }));
 
+// Mock da verificação de licença para o LicenseGuard liberar a renderização
+// (caso contrário a sessão mock nula resulta na tela "Acesso Expirado")
+vi.mock('./services/license', () => ({
+    licenseService: {
+        checkLicense: vi.fn().mockResolvedValue({ active: true, type: 'pro' }),
+        getStripeCheckoutUrl: vi.fn(),
+    }
+}));
+
 describe('App Smoke Test', () => {
     it('mounts without crashing and shows login/public route', async () => {
         try {
-            // The app uses a HashRouter, so the route is taken from the URL hash.
-            // Start on the public /login route; the root route is wrapped by the
-            // LicenseGuard, which (for an unauthenticated session) shows the
-            // "expired" screen rather than the login form.
-            window.location.hash = '#/login';
             render(<App />);
 
             // Wait for any async effects or loading states
             await waitFor(() => {
                 // Check for a known element on the public page (Login)
+                // Assuming the default redirect goes to Login
                 const loginElements = screen.queryAllByText(/Entrar/i);
                 expect(loginElements.length).toBeGreaterThan(0);
             });

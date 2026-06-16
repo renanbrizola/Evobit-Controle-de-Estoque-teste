@@ -96,7 +96,7 @@ ipcMain.handle('fiscal:emit', async (event, saleData) => {
     // 3. Sign XML (Mock for now)
     // const signer = new XmlSigner('path/to/cert.pfx', 'password');
     // const signedXml = signer.sign(xml);
-    const _signedXml = xml; // Bypass for architectural test (placeholder until XmlSigner is wired)
+    const signedXml = xml; // Bypass for architectural test
 
     // 4. Send to SEFAZ (Mock for now)
     // const sefaz = new SefazCommunicator('path/to/cert.pfx', 'password');

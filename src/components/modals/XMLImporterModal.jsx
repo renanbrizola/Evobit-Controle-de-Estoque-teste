@@ -131,7 +131,7 @@ const XMLImporterModal = ({ onClose, onSuccess }) => {
                 } else {
                     finalProductId = item.match.id;
 
-                    // Update the product cost and provider if it didn't have one?
+                    // Update the product cost and provider if it didn't have one? 
                     // Usually we don't overwrite blindly, but maybe update last_cost.
                 }
 

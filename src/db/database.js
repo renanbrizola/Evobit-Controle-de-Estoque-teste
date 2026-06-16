@@ -41,6 +41,7 @@ const createDatabase = async () => {
         return db;
     }
     try {
+        // Estratégias de migração
         // Specific migrations for V2 collections
         // Keys must be the TARGET version (1 = v0->v1, 2 = v1->v2)
         const productMigration = {

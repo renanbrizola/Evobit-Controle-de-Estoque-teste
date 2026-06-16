@@ -24,7 +24,8 @@ const UpdatePassword = () => {
                 navigate('/forgot-password');
             }
         });
-    }, [navigate, t]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [navigate]);
 
     const handleUpdate = async (e) => {
         e.preventDefault();

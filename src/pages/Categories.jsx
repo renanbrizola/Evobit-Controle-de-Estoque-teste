@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -19,7 +19,12 @@ const Categories = () => {
     const [filter, setFilter] = useState('');
     const [deleteConfirm, setDeleteConfirm] = useState(null);
 
-    const loadData = useCallback(async () => {
+    useEffect(() => {
+        loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const loadData = async () => {
         try {
             setLoading(true);
             const [cats, prods] = await Promise.all([
@@ -34,13 +39,7 @@ const Categories = () => {
         } finally {
             setLoading(false);
         }
-    }, [t]);
-
-    useEffect(() => {
-        (async () => {
-            await loadData();
-        })();
-    }, [loadData]);
+    };
 
     // Count products per category
     const productCountMap = useMemo(() => {

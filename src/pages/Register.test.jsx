@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import Register from './Register';
+import { LanguageProvider } from '../contexts/LanguageContext';
 import { BrowserRouter } from 'react-router-dom';
 
 // Mock Supabase Auth
@@ -24,7 +25,9 @@ vi.mock('sonner', () => ({
 const renderRegister = () => {
     return render(
         <BrowserRouter>
-            <Register />
+            <LanguageProvider>
+                <Register />
+            </LanguageProvider>
         </BrowserRouter>
     );
 };
@@ -56,6 +59,7 @@ describe('Register Component', () => {
         renderRegister();
 
         fireEvent.change(screen.getByLabelText(/^Email/i), { target: { value: 'newuser@example.com' } });
+        // Senha forte válida: maiúscula, minúscula, número e caractere especial
         fireEvent.change(screen.getByLabelText(/^Senha/i), { target: { value: 'Password123!' } });
         fireEvent.change(screen.getByLabelText(/Confirmar Senha/i), { target: { value: 'Password123!' } });
 

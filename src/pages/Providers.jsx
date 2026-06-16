@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -104,7 +104,7 @@ const Providers = () => {
         XLSX.writeFile(wb, "fornecedores.xlsx");
     };
 
-    const loadData = useCallback(async () => {
+    const loadData = async () => {
         try {
             setLoading(true);
             const data = await api.providers.list();
@@ -121,13 +121,12 @@ const Providers = () => {
         } finally {
             setLoading(false);
         }
-    }, [t]);
+    };
 
     useEffect(() => {
-        (async () => {
-            await loadData();
-        })();
-    }, [loadData]);
+        loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const handleEdit = (provider) => {
         setEditingProvider(provider);

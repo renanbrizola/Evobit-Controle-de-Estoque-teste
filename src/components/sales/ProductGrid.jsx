@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Search, Package, Plus } from 'lucide-react';
-import { toast } from 'sonner';
 import { Card } from '../ui/Card';
 import { Input } from '../ui/Input';
 import { api } from '../../services/api';
+import { toast } from 'sonner';
 
 const ProductGrid = ({ onAddToCart }) => {
     const [searchTerm, setSearchTerm] = useState('');

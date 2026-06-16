@@ -56,18 +56,18 @@ export async function updatePromotion(id: string, payload: PromotionPayload): Pr
   };
 }
 
-export async function addPromotionItem(_id: string, _payload: PromotionItemPayload) {
+export async function addPromotionItem(id: string, payload: PromotionItemPayload) {
   return { success: true };
 }
 
-export async function updatePromotionItem(_promotionId: string, _itemId: string, _payload: PromotionItemPayload) {
+export async function updatePromotionItem(promotionId: string, itemId: string, payload: PromotionItemPayload) {
   return { success: true };
 }
 
-export async function deletePromotionItem(_promotionId: string, _itemId: string) {
+export async function deletePromotionItem(promotionId: string, itemId: string) {
   return { success: true };
 }
 
-export async function publishPromotion(_id: string) {
+export async function publishPromotion(id: string) {
   return { success: true };
 }

@@ -33,7 +33,6 @@ electron_*.txt
 lint_*.txt
 lint_*.json
 lint.json
-lint-report*.txt
 tsc_results*.txt
 typecheck_errors.txt
 test_log.txt

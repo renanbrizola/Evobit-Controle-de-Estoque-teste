@@ -1,23 +1,16 @@
 import '@testing-library/jest-dom';
-// Provides a working IndexedDB implementation under jsdom so RxDB/Dexie can
-// open the local database during tests instead of throwing MissingAPIError.
-import 'fake-indexeddb/auto';
 
-// jsdom does not implement matchMedia, which sonner's <Toaster /> relies on.
-// Provide a minimal no-op stub so components that render toasts don't crash.
-if (typeof window !== 'undefined' && typeof window.matchMedia !== 'function') {
-  Object.defineProperty(window, 'matchMedia', {
-    writable: true,
-    configurable: true,
-    value: (query) => ({
-      matches: false,
-      media: query,
-      onchange: null,
-      addListener: () => {}, // deprecated
-      removeListener: () => {}, // deprecated
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false,
-    }),
-  });
+// jsdom não implementa matchMedia — usado por componentes que detectam o tema do
+// sistema (ex.: Toaster do sonner com theme="system" e o ThemeContext).
+if (typeof window !== 'undefined' && !window.matchMedia) {
+    window.matchMedia = (query) => ({
+        matches: false,
+        media: query,
+        onchange: null,
+        addListener: () => {},
+        removeListener: () => {},
+        addEventListener: () => {},
+        removeEventListener: () => {},
+        dispatchEvent: () => false,
+    });
 }

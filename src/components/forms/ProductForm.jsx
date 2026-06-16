@@ -7,6 +7,7 @@ import { Tabs } from '../ui/Tabs';
 
 
 const ProductForm = ({ initialData, onSave, onCancel, saving, categories = [], providers = [] }) => {
+
     // Default State for all ERP fields
     const [formData, setFormData] = useState({
         // ID & Basic
@@ -196,7 +197,7 @@ const ProductForm = ({ initialData, onSave, onCancel, saving, categories = [], p
                     <input type="checkbox" id="is_raw_material" checked={formData.is_raw_material} onChange={e => handleChange('is_raw_material', e.target.checked)} className="w-4 h-4 mt-0.5 rounded border-gray-300 text-brand-primary focus:ring-brand-primary" />
                     <div className="flex flex-col">
                         <label htmlFor="is_raw_material" className="text-sm font-bold text-gray-700 dark:text-gray-300 select-none cursor-pointer">Matéria-prima / Insumo</label>
-                        <span className="text-xs text-gray-500 mt-0.5">Marque esta opção para este produto aparecer no módulo Ficha Técnica → Insumos.</span>
+                        <span className="text-xs text-gray-500 mt-0.5">Marque esta opção para este produto aparecer no módulo Ficha Técnica como insumo de receita.</span>
                     </div>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { DollarSign, TrendingUp, TrendingDown, Plus, Wallet, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import { Button } from '../components/ui/Button';
@@ -15,7 +15,7 @@ const Finance = () => {
 
 
 
-    const loadData = useCallback(async () => {
+    const loadData = async () => {
         try {
             const list = await FinanceService.list();
             setTransactions(list);
@@ -28,13 +28,12 @@ const Finance = () => {
             console.error(error);
             toast.error('Erro ao carregar dados financeiros');
         }
-    }, []);
+    };
 
     useEffect(() => {
-        (async () => {
-            await loadData();
-        })();
-    }, [loadData]);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        loadData();
+    }, []);
 
     const handleSaveTransaction = () => {
         loadData();

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -23,7 +23,7 @@ const Customers = () => {
         address: ''
     });
 
-    const loadData = useCallback(async () => {
+    const loadData = async () => {
         setLoading(true);
         try {
             const data = await CustomerService.list(search);
@@ -34,13 +34,12 @@ const Customers = () => {
         } finally {
             setLoading(false);
         }
-    }, [search]);
+    };
 
     useEffect(() => {
-        (async () => {
-            await loadData();
-        })();
-    }, [loadData]);
+        loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [search]);
 
     const handleEdit = (customer) => {
         setEditingCustomer(customer);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Card } from '../components/ui/Card';
 import { api } from '../services/api';
 import { Package, TrendingUp, AlertTriangle, DollarSign, Activity, ArrowUp, ArrowDown, Filter, PieChart as PieIcon, BarChart3, Clock, Calendar, Tag } from 'lucide-react';
@@ -113,7 +113,12 @@ const Dashboard = () => {
         categories: []
     });
 
-    const loadData = useCallback(async () => {
+    useEffect(() => {
+        loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    const loadData = async () => {
         setLoading(true);
         try {
             const [products, movements, batches, categories, expiringBatches] = await Promise.all([
@@ -150,13 +155,7 @@ const Dashboard = () => {
         } finally {
             setLoading(false);
         }
-    }, [t]);
-
-    useEffect(() => {
-        (async () => {
-            await loadData();
-        })();
-    }, [loadData]);
+    }
 
     const _handleGenerateTestData = async () => {
         if (!user || !user.id) {
@@ -392,6 +391,7 @@ const Dashboard = () => {
         };
 
     }, [rawData, dateRange, selectedCategory, t, language]);
+
 
     return (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-700 pb-10">
