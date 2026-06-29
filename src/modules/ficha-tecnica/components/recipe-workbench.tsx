@@ -1139,9 +1139,8 @@ export function RecipeWorkbench({
             </div>
             <ActionButton
               onClick={openProductCreate}
-              disabled={loading || isDemoSession || products.length === 0}
+              disabled={loading || isDemoSession}
               className="gap-1.5"
-              title={products.length === 0 ? "Cadastre primeiro um produto final no módulo Produtos." : undefined}
             >
               <Plus size={14} /> Nova ficha
             </ActionButton>
@@ -1376,23 +1375,11 @@ export function RecipeWorkbench({
                 {productStage === 'nome' ? (
                   <div className="max-w-3xl space-y-4">
                     <div className="grid gap-4 md:grid-cols-2">
-                      <RecipeProductField
-                        value={recipeForm.finishedProductId || ''}
-                        onChange={(finishedProductId, selectedName) => {
-                          setRecipeForm((current) => ({
-                            ...current,
-                            finishedProductId,
-                            name: current.name || selectedName
-                          }));
-                        }}
-                        products={products}
-                        disabled={loading || isDemoSession}
-                      />
                       <RecipeNameField
                         value={recipeForm.name}
                         onChange={(name) => setRecipeForm((current) => ({ ...current, name }))}
                         disabled={loading || isDemoSession}
-                        label="Nome da ficha (opcional)"
+                        label="Nome do produto"
                       />
                       <RecipeCategoryField
                         categoryId={recipeForm.categoryId}
@@ -1413,7 +1400,7 @@ export function RecipeWorkbench({
                       disabled={
                         loading ||
                         isDemoSession ||
-                        !recipeForm.finishedProductId ||
+                        !recipeForm.name ||
                         (!editingRecipeId && !defaultCompoundYieldUomId)
                       }
                     >

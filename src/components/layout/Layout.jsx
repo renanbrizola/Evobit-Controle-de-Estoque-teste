@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X, ShoppingBag, Tags, Tag, Users, Package, History, LogOut, LayoutDashboard, ArrowLeftRight, ClipboardList, Settings, Grid, Home, PanelLeftClose, PanelLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
@@ -15,16 +15,6 @@ const Layout = () => {
     const { t } = useLanguage();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-    // Sidebar Collapse State
-    const [isCollapsed, setIsCollapsed] = useState(() => {
-        return localStorage.getItem('sidebarCollapsed') === 'true';
-    });
-
-    const toggleSidebar = () => {
-        const newState = !isCollapsed;
-        setIsCollapsed(newState);
-        localStorage.setItem('sidebarCollapsed', newState);
-    };
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
     const [isModuleConfirmOpen, setIsModuleConfirmOpen] = useState(false);
     const navigate = useNavigate();
@@ -45,7 +35,7 @@ const Layout = () => {
                     return min > 0 && current <= min;
                 }).length;
                 if (mounted) setAlertCount(lowStock);
-            } catch (e) { /* silent */ }
+            } catch { /* silent */ }
         };
         countAlerts();
         const interval = setInterval(countAlerts, 60000);
@@ -123,7 +113,6 @@ const Layout = () => {
         // Financeiro
         { path: '/app/ficha-tecnica/despesas', label: 'Despesas', icon: FileText, module: 'technical_sheet' },
         { path: '/app/ficha-tecnica/precificacao', label: 'Precificação', icon: Tag, module: 'technical_sheet' },
-        { path: '/app/ficha-tecnica/promocoes', label: 'Promoções', icon: TrendingUp, module: 'technical_sheet' },
         // Administração
         { path: '/app/ficha-tecnica/funcionarios', label: 'Funcionários', icon: Users, module: 'technical_sheet' },
 
@@ -146,7 +135,7 @@ const Layout = () => {
     ];
 
     if (user?.role === 'admin') {
-        allNavItems.push({ path: '/admin', label: t('menu', 'admin'), icon: Users, alwaysVisible: true });
+        allNavItems.push({ path: '/app/admin', label: t('menu', 'admin'), icon: Users, alwaysVisible: true });
     }
 
     // Filter items based on current context

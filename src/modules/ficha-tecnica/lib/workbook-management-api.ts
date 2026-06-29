@@ -1,6 +1,9 @@
 'use client';
 
-import api from '../lib/api';
+// Fase 2 (Opcao C): persistencia real online-first via Supabase, sem ocupar
+// colecoes do RxDB. Espelha o padrao de api.teams (services/api.js).
+import { supabase } from '../../../lib/supabaseClient';
+import { getCurrentUser } from '../../../services/authHelper';
 
 export interface WorkbookSettingsPayload {
   workDaysPerWeek: number;
@@ -64,78 +67,159 @@ export interface GasBottlePayload {
   sortOrder?: number;
 }
 
+// ─── Helpers ──────────────────────────────────────────────────────────────
+type Row = Record<string, unknown>;
+
+async function requireUserId(): Promise<string> {
+  const user = await getCurrentUser();
+  if (!user || !user.id) {
+    throw new Error('Sessao expirada. Faca login novamente para salvar os dados.');
+  }
+  return user.id;
+}
+
+const nowIso = () => new Date().toISOString();
+
+async function insertRow(table: string, row: Row) {
+  const user_id = await requireUserId();
+  const { data, error } = await supabase.from(table).insert({ ...row, user_id }).select().single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function updateRow(table: string, id: string, row: Row) {
+  const { data, error } = await supabase
+    .from(table)
+    .update({ ...row, updated_at: nowIso() })
+    .eq('id', id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+
+async function softDeleteRow(table: string, id: string) {
+  const { error } = await supabase
+    .from(table)
+    .update({ deleted_at: nowIso(), updated_at: nowIso() })
+    .eq('id', id);
+  if (error) throw new Error(error.message);
+  return { success: true };
+}
+
+// ─── Configuracoes (singleton por usuario) ─────────────────────────────────
 export async function saveWorkbookSettings(payload: WorkbookSettingsPayload) {
-  return api.put('/workbook/settings', payload);
+  const user_id = await requireUserId();
+  const row = {
+    user_id,
+    work_days_per_week: payload.workDaysPerWeek,
+    work_hours_per_day: payload.workHoursPerDay,
+    target_margin_percent: payload.targetMarginPercent,
+    average_monthly_kwh: payload.averageMonthlyKwh,
+    electric_other_costs: payload.electricOtherCosts,
+    kwh_price: payload.kwhPrice,
+    card_fee_percent: payload.cardFeePercent ?? 0,
+    delivery_fee_percent: payload.deliveryFeePercent ?? 0,
+    commission_percent: payload.commissionPercent ?? 0,
+    tax_percent: payload.taxPercent ?? 0,
+    operational_cost_percent: payload.operationalCostPercent ?? 0,
+    updated_at: nowIso(),
+  };
+  const { data, error } = await supabase
+    .from('ft_workbook_settings')
+    .upsert(row, { onConflict: 'user_id' })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
-export async function createExpense(payload: OperatingExpensePayload) {
-  return api.post('/workbook/expenses', payload);
-}
+// ─── Despesas operacionais ─────────────────────────────────────────────────
+const expenseRow = (p: OperatingExpensePayload): Row => ({
+  type: p.type,
+  name: p.name,
+  amount: p.amount,
+  sort_order: p.sortOrder ?? 0,
+});
 
-export async function updateExpense(id: string, payload: OperatingExpensePayload) {
-  return api.patch(`/workbook/expenses/${id}`, payload);
-}
+export const createExpense = (payload: OperatingExpensePayload) =>
+  insertRow('ft_operating_expenses', expenseRow(payload));
+export const updateExpense = (id: string, payload: OperatingExpensePayload) =>
+  updateRow('ft_operating_expenses', id, expenseRow(payload));
+export const deleteExpense = (id: string) => softDeleteRow('ft_operating_expenses', id);
 
-export async function deleteExpense(id: string) {
-  return api.delete(`/workbook/expenses/${id}`);
-}
+// ─── Depreciacao de ativos ─────────────────────────────────────────────────
+const depreciationRow = (p: DepreciationAssetPayload): Row => ({
+  category: p.category,
+  asset_name: p.assetName,
+  invoice_value: p.invoiceValue,
+  linear: p.linear,
+  sort_order: p.sortOrder ?? 0,
+});
 
-export async function createDepreciationAsset(payload: DepreciationAssetPayload) {
-  return api.post('/workbook/depreciation-assets', payload);
-}
+export const createDepreciationAsset = (payload: DepreciationAssetPayload) =>
+  insertRow('ft_depreciation_assets', depreciationRow(payload));
+export const updateDepreciationAsset = (id: string, payload: DepreciationAssetPayload) =>
+  updateRow('ft_depreciation_assets', id, depreciationRow(payload));
+export const deleteDepreciationAsset = (id: string) => softDeleteRow('ft_depreciation_assets', id);
 
-export async function updateDepreciationAsset(id: string, payload: DepreciationAssetPayload) {
-  return api.patch(`/workbook/depreciation-assets/${id}`, payload);
-}
+// ─── Funcionarios ──────────────────────────────────────────────────────────
+const staffRow = (p: StaffMemberPayload): Row => ({
+  is_active: p.isActive,
+  name: p.name,
+  role: p.role,
+  salary: p.salary,
+  fgts: p.fgts,
+  thirteenth: p.thirteenth,
+  vacation: p.vacation,
+  fgts_vacation: p.fgtsVacation,
+  weekly_hours: p.weeklyHours,
+  sort_order: p.sortOrder ?? 0,
+});
 
-export async function deleteDepreciationAsset(id: string) {
-  return api.delete(`/workbook/depreciation-assets/${id}`);
-}
+export const createStaffMember = (payload: StaffMemberPayload) =>
+  insertRow('ft_staff', staffRow(payload));
+export const updateStaffMember = (id: string, payload: StaffMemberPayload) =>
+  updateRow('ft_staff', id, staffRow(payload));
+export const deleteStaffMember = (id: string) => softDeleteRow('ft_staff', id);
 
-export async function createStaffMember(payload: StaffMemberPayload) {
-  return api.post('/workbook/staff', payload);
-}
+// ─── Equipamentos eletricos ────────────────────────────────────────────────
+const electricRow = (p: ElectricEquipmentPayload): Row => ({
+  name: p.name,
+  power_watts: p.powerWatts,
+  sort_order: p.sortOrder ?? 0,
+});
 
-export async function updateStaffMember(id: string, payload: StaffMemberPayload) {
-  return api.patch(`/workbook/staff/${id}`, payload);
-}
+export const createElectricEquipment = (payload: ElectricEquipmentPayload) =>
+  insertRow('ft_electric_equipment', electricRow(payload));
+export const updateElectricEquipment = (id: string, payload: ElectricEquipmentPayload) =>
+  updateRow('ft_electric_equipment', id, electricRow(payload));
+export const deleteElectricEquipment = (id: string) => softDeleteRow('ft_electric_equipment', id);
 
-export async function deleteStaffMember(id: string) {
-  return api.delete(`/workbook/staff/${id}`);
-}
+// ─── Equipamentos a gas ────────────────────────────────────────────────────
+const gasEquipmentRow = (p: GasEquipmentPayload): Row => ({
+  name: p.name,
+  kg_per_hour: p.kgPerHour,
+  bottle_kg: p.bottleKg,
+  sort_order: p.sortOrder ?? 0,
+});
 
-export async function createElectricEquipment(payload: ElectricEquipmentPayload) {
-  return api.post('/workbook/electric-equipments', payload);
-}
+export const createGasEquipment = (payload: GasEquipmentPayload) =>
+  insertRow('ft_gas_equipment', gasEquipmentRow(payload));
+export const updateGasEquipment = (id: string, payload: GasEquipmentPayload) =>
+  updateRow('ft_gas_equipment', id, gasEquipmentRow(payload));
+export const deleteGasEquipment = (id: string) => softDeleteRow('ft_gas_equipment', id);
 
-export async function updateElectricEquipment(id: string, payload: ElectricEquipmentPayload) {
-  return api.patch(`/workbook/electric-equipments/${id}`, payload);
-}
+// ─── Botijoes de gas ───────────────────────────────────────────────────────
+const gasBottleRow = (p: GasBottlePayload): Row => ({
+  code: p.code,
+  capacity_kg: p.capacityKg,
+  price: p.price ?? null,
+  sort_order: p.sortOrder ?? 0,
+});
 
-export async function deleteElectricEquipment(id: string) {
-  return api.delete(`/workbook/electric-equipments/${id}`);
-}
-
-export async function createGasEquipment(payload: GasEquipmentPayload) {
-  return api.post('/workbook/gas-equipments', payload);
-}
-
-export async function updateGasEquipment(id: string, payload: GasEquipmentPayload) {
-  return api.patch(`/workbook/gas-equipments/${id}`, payload);
-}
-
-export async function deleteGasEquipment(id: string) {
-  return api.delete(`/workbook/gas-equipments/${id}`);
-}
-
-export async function createGasBottle(payload: GasBottlePayload) {
-  return api.post('/workbook/gas-bottles', payload);
-}
-
-export async function updateGasBottle(id: string, payload: GasBottlePayload) {
-  return api.patch(`/workbook/gas-bottles/${id}`, payload);
-}
-
-export async function deleteGasBottle(id: string) {
-  return api.delete(`/workbook/gas-bottles/${id}`);
-}
+export const createGasBottle = (payload: GasBottlePayload) =>
+  insertRow('ft_gas_bottles', gasBottleRow(payload));
+export const updateGasBottle = (id: string, payload: GasBottlePayload) =>
+  updateRow('ft_gas_bottles', id, gasBottleRow(payload));
+export const deleteGasBottle = (id: string) => softDeleteRow('ft_gas_bottles', id);

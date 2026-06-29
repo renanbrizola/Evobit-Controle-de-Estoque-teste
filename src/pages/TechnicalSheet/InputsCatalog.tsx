@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { toast } from 'sonner';
 import { Pencil, Plus, Trash2, Package, ChevronDown, ChevronUp } from 'lucide-react';
 import { ItemType } from '../../modules/ficha-tecnica/types/enums';
 import { formatBRL, formatDate } from '../../modules/ficha-tecnica/utils';
@@ -212,13 +211,52 @@ export default function InputCatalogPage() {
   }, []);
 
   const openCreate = () => {
-    toast.info("Para cadastrar um insumo, crie um produto e marque 'Matéria-prima / Insumo'.");
-    navigate('/app/produtos?tipo=insumo');
+    setEditingId(null);
+    setForm(emptyForm);
+    syncPriceInputs(emptyForm);
+    setSelectedDetail(null);
+    setShowQuickCategory(false);
+    setShowQuickSupplier(false);
+    setPanelOpen(true);
   };
 
   const openEdit = async (id: string) => {
-    toast.info("Para editar um insumo, acesse o Cadastro de Produtos.");
-    navigate('/app/produtos');
+    if (isDemoSession) return;
+    setLoadingDetail(true);
+    setMessage(null);
+    try {
+      const detail = await getInventoryItemDetail(id);
+      const currentPricing = detail.supplierPricings[0];
+      setEditingId(detail.id);
+      setSelectedDetail(detail);
+      const nextForm: InventoryEditorForm = {
+        name: detail.name,
+        type: detail.type as ItemType,
+        uomId: detail.uom.id,
+        categoryId: detail.category?.id ?? '',
+        code: detail.code ?? '',
+        description: detail.description ?? '',
+        yieldFactor: Number(detail.yieldFactor ?? 1),
+        correctionFactor: Number(detail.correctionFactor ?? 1),
+        minStock: Number(detail.minStock ?? 0),
+        currentStock: Number(detail.currentStock ?? 0),
+        supplierId: currentPricing?.supplier.id ?? '',
+        unitPrice: Number(currentPricing?.unitPrice ?? 0),
+        pricingMode: 'unit',
+        purchaseTotal: 0,
+        purchaseQty: 0,
+        purchaseUomId: '',
+      };
+      setForm(nextForm);
+      syncPriceInputs(nextForm);
+      setShowQuickCategory(false);
+      setShowQuickSupplier(false);
+      setPanelOpen(true);
+    } catch (err) {
+      setMessage({ tone: 'error', text: getApiErrorMessage(err, 'Não foi possível carregar os dados do insumo.') });
+    } finally {
+      setLoadingDetail(false);
+    }
   };
 
   const closePanel = () => {

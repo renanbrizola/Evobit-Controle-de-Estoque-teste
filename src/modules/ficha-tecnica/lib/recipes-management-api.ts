@@ -2,11 +2,13 @@
 
 import { api } from '../../../services/api';
 import { v4 as uuidv4 } from 'uuid';
+import { calculateSuggestedPrice } from './pricing-calculator';
 import type {
   CostBreakdownDto,
   EquipmentType,
   ProductType,
   RecipeStatus,
+  WorkbookProductRowDto,
 } from '../types/enums';
 
 export interface RecipeListItem {
@@ -444,13 +446,30 @@ export async function getRecipe(id: string): Promise<RecipeDetail> {
 }
 
 export async function createRecipe(payload: RecipePayload): Promise<RecipeDetail> {
-  if (!payload.finishedProductId) {
-    throw new Error('finishedProductId é obrigatório');
+  let finishedProductId = payload.finishedProductId;
+
+  // Catalogo unificado: sem produto vinculado, cria o produto final
+  // automaticamente a partir do nome da ficha (vira um produto final no
+  // cadastro de Produtos, is_raw_material = false).
+  if (!finishedProductId) {
+    let categoryName = '';
+    if (payload.categoryId) {
+      const catRes = await api.categories.list();
+      const cats = Array.isArray(catRes) ? catRes : (catRes.items || []);
+      categoryName = cats.find((c: any) => c.id === payload.categoryId)?.name || '';
+    }
+    const product = await api.products.create({
+      name: payload.name || 'Nova Ficha',
+      category: categoryName,
+      unit: 'UN',
+      is_raw_material: false,
+    });
+    finishedProductId = product.id;
   }
 
   const recipe = await api.recipes.create({
     name: payload.name || 'Nova Ficha',
-    finished_product_id: payload.finishedProductId,
+    finished_product_id: finishedProductId,
     yield_quantity: payload.yieldQuantity,
     preparation_time_minutes: 0,
     instructions: payload.description || '',
@@ -487,16 +506,16 @@ export async function archiveRecipe(id: string) {
 export async function createRecipeVersion(recipeId: string) {
   return (await getRecipe(recipeId)).versions[0];
 }
-export async function submitRecipeVersion(recipeId: string, versionId: string) {
+export async function submitRecipeVersion(recipeId: string, _versionId: string) {
   return (await getRecipe(recipeId)).versions[0];
 }
-export async function approveRecipeVersion(recipeId: string, versionId: string) {
+export async function approveRecipeVersion(recipeId: string, _versionId: string) {
   return (await getRecipe(recipeId)).versions[0];
 }
-export async function recalculateRecipeVersion(recipeId: string, versionId: string) {
+export async function recalculateRecipeVersion(recipeId: string, _versionId: string) {
   return (await getRecipe(recipeId)).versions[0];
 }
-export async function getCostBreakdown(versionId: string) {
+export async function getCostBreakdown(_versionId: string) {
   return { materials: 0, labor: 0, equipment: 0, packaging: 0, overhead: 0, total: 0 };
 }
 
@@ -603,19 +622,19 @@ export async function addRecipeStep(
 }
 
 export async function updateRecipeStep(
-  recipeId: string,
-  versionId: string,
-  stepId: string,
-  payload: RecipeStepPayload,
+  _recipeId: string,
+  _versionId: string,
+  _stepId: string,
+  _payload: RecipeStepPayload,
 ) {
   resetCache();
   return { success: true };
 }
 
 export async function deleteRecipeStep(
-  recipeId: string,
-  versionId: string,
-  stepId: string,
+  _recipeId: string,
+  _versionId: string,
+  _stepId: string,
 ) {
   resetCache();
   return { success: true };
@@ -633,3 +652,93 @@ export async function deleteRecipeLabor() { throw new Error('Mão de obra não s
 export async function addRecipeEquipment() { throw new Error('Equipamentos não suportados na versão atual'); }
 export async function updateRecipeEquipment() { throw new Error('Equipamentos não suportados na versão atual'); }
 export async function deleteRecipeEquipment() { throw new Error('Equipamentos não suportados na versão atual'); }
+
+// =======================
+// Precificação: produtos reais (receitas) para o workbook
+// =======================
+export interface WorkbookProductsProfile {
+  targetMarginPercent?: number;
+  cardFeePercent?: number;
+  deliveryFeePercent?: number;
+  commissionPercent?: number;
+  taxPercent?: number;
+  operationalCostPercent?: number;
+}
+
+/**
+ * Monta a lista de produtos a precificar (data.products) a partir das receitas
+ * reais: custo unitário via calculateCost, preço sugerido via pricing-calculator
+ * e preço de venda atual lido do produto vinculado.
+ */
+export async function listWorkbookProducts(
+  profile: WorkbookProductsProfile = {},
+): Promise<WorkbookProductRowDto[]> {
+  if (!api.recipes) return [];
+  await loadProductsCache();
+
+  const response = await api.recipes.list();
+  const recipes = Array.isArray(response) ? response : (response.items || []);
+
+  const margin = Number(profile.targetMarginPercent ?? 25);
+  const cardFee = Number(profile.cardFeePercent ?? 0);
+  const deliveryFee = Number(profile.deliveryFeePercent ?? 0);
+  const commission = Number(profile.commissionPercent ?? 0);
+  const tax = Number(profile.taxPercent ?? 0);
+  const operational = Number(profile.operationalCostPercent ?? 0);
+  const totalFeesFraction = (cardFee + deliveryFee + commission + tax + operational) / 100;
+
+  return recipes.map((recipe): WorkbookProductRowDto => {
+    const { totalCost } = calculateCost(recipe.ingredients);
+    const yieldQuantity = Number(recipe.yield_quantity) || 1;
+    const unitCost = yieldQuantity > 0 ? totalCost / yieldQuantity : totalCost;
+
+    const product = cachedProductsMap.get(recipe.finished_product_id);
+    const salePrice = product ? Number(product.price || 0) : 0;
+    const unit = product?.unit || 'un';
+
+    const suggested = calculateSuggestedPrice({
+      unitCost,
+      targetMarginPercent: margin,
+      cardFeePercent: cardFee,
+      deliveryFeePercent: deliveryFee,
+      commissionPercent: commission,
+      taxPercent: tax,
+      operationalCostPercent: operational,
+      percentageMode: 'percent',
+    });
+
+    const marginPercent = salePrice > 0 ? (1 - totalFeesFraction - unitCost / salePrice) * 100 : null;
+    const cmvPercent = salePrice > 0 ? (unitCost / salePrice) * 100 : null;
+    const contributionMargin = salePrice > 0 ? salePrice - unitCost - salePrice * totalFeesFraction : null;
+
+    return {
+      code: recipe.id,
+      recipeId: recipe.id,
+      recipeName: recipe.name || 'Sem nome',
+      productType: 'FINAL',
+      recipeVersionId: `${recipe.id}-v1`,
+      versionNumber: 1,
+      versionStatus: salePrice > 0 ? 'APPROVED' : 'DRAFT',
+      yieldQuantity,
+      yieldUnit: unit,
+      servingSize: null,
+      pricingUnit: unit,
+      pricingUnitFactor: 1,
+      laborCost: 0,
+      ingredientCost: unitCost,
+      packagingCost: 0,
+      equipmentCost: 0,
+      cardFee,
+      deliveryCost: deliveryFee,
+      taxCost: tax,
+      operationalCost: operational,
+      totalCost: unitCost,
+      suggestedPrice: suggested.isViable ? suggested.suggestedPrice : null,
+      salePrice: salePrice > 0 ? salePrice : null,
+      contributionMargin,
+      marginPercent,
+      cmvPercent,
+      updatedAt: product?.updated_at || new Date().toISOString(),
+    };
+  });
+}

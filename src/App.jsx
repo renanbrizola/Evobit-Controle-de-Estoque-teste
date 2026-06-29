@@ -9,7 +9,6 @@ import Inventory from './pages/Inventory';
 import Providers from './pages/Providers';
 import Categories from './pages/Categories';
 import History from './pages/History';
-import TechnicalSheetProvisional from './pages/TechnicalSheetProvisional';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import ForgotPassword from './pages/ForgotPassword';
@@ -51,7 +50,6 @@ import TechnicalSheetRecipes from './pages/TechnicalSheet/Recipes';
 import TechnicalSheetEquipment from './pages/TechnicalSheet/Equipment';
 import TechnicalSheetExpenses from './pages/TechnicalSheet/Expenses';
 import TechnicalSheetPricing from './pages/TechnicalSheet/Pricing';
-import TechnicalSheetPromotions from './pages/TechnicalSheet/Promotions';
 import TechnicalSheetStaff from './pages/TechnicalSheet/Staff';
 import TechnicalSheetProductDetail from './pages/TechnicalSheet/ProductDetail';
 
@@ -132,9 +130,8 @@ function App() {
 
                   {/* License Guard Wrapper */}
                   <Route element={<LicenseGuard><Outlet /></LicenseGuard>}>
-                    <Route element={<AdminRoute />}>
-                      <Route path="/admin" element={<Admin />} />
-                    </Route>
+                    {/* Legacy /admin redirect — Admin agora vive dentro de /app (shell compartilhado) */}
+                    <Route path="/admin" element={<Navigate to="/app/admin" replace />} />
 
                     <Route element={<ProtectedRoute />}>
                       {/* Module Selection (Lobby) */}
@@ -184,7 +181,6 @@ function App() {
                             <Route path="equipamentos" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetEquipment /></SectionErrorBoundary>} />
                             <Route path="despesas" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetExpenses /></SectionErrorBoundary>} />
                             <Route path="precificacao" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetPricing /></SectionErrorBoundary>} />
-                            <Route path="promocoes" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetPromotions /></SectionErrorBoundary>} />
                             <Route path="funcionarios" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetStaff /></SectionErrorBoundary>} />
                           </Route>
                         </Route>
@@ -210,6 +206,11 @@ function App() {
                         </Route>
 
                         <Route path="configuracoes" element={<CompanySettings />} />
+
+                        {/* ADMIN (restrito a admin, dentro do shell do app) */}
+                        <Route element={<AdminRoute />}>
+                          <Route path="admin" element={<SectionErrorBoundary section="admin"><Admin /></SectionErrorBoundary>} />
+                        </Route>
                       </Route>
                     </Route>
                   </Route>

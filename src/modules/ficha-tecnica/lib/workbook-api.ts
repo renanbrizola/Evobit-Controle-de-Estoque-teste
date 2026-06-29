@@ -10,6 +10,7 @@ import {
 } from '../types/enums';
 import api from '../lib/api';
 import { listWorkbookInputs } from './inventory-management-api';
+import { fetchWorkbookSections, emptyWorkbookSections } from './workbook-data-api';
 import {
   depreciationExpenses,
   equipmentEnergyRows,
@@ -270,7 +271,9 @@ function buildMockProductDetail(code: string): WorkbookProductDetailDto | null {
 }
 
 export function useWorkbookSnapshot(isDemoSession: boolean) {
-  const [data, setData] = useState<WorkbookSnapshotDto>(buildMockSnapshot());
+  const [data, setData] = useState<WorkbookSnapshotDto>(() =>
+    isDemoSession ? buildMockSnapshot() : { ...buildMockSnapshot(), ...emptyWorkbookSections() }
+  );
   const [loading, setLoading] = useState(!isDemoSession);
   const [source, setSource] = useState<'demo' | 'api'>(isDemoSession ? 'demo' : 'api');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -293,20 +296,31 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
     setLoading(true);
 
     (async () => {
+      // Mescla no estado ANTERIOR: o que falhar (transitório) NÃO sobrescreve com
+      // mock — evita o "às vezes aparece o cadastro antigo". O erro real é logado.
+      let inputs: WorkbookSnapshotDto['inputs'] | undefined;
+      let sections: Partial<WorkbookSnapshotDto> | undefined;
+
       try {
-        const inputs = await listWorkbookInputs();
-        if (!active) return;
-        // Insumos reais do cadastro do Evobit; demais seções do workbook
-        // (despesas, equipe, utilidades) seguem em mock até a migração delas.
-        setData({ ...buildMockSnapshot(), inputs });
-        setSource('api');
-      } catch {
-        if (!active) return;
-        setData(buildMockSnapshot());
-        setSource('demo');
-      } finally {
-        if (active) setLoading(false);
+        inputs = await listWorkbookInputs();
+      } catch (err) {
+        console.error('[workbook] falha ao carregar insumos reais:', err);
       }
+
+      try {
+        sections = await fetchWorkbookSections();
+      } catch (err) {
+        console.error('[workbook] falha ao carregar seções do workbook (Supabase):', err);
+      }
+
+      if (!active) return;
+      setData((prev) => ({
+        ...prev,
+        ...(inputs ? { inputs } : {}),
+        ...(sections ?? {}),
+      }));
+      setSource('api');
+      setLoading(false);
     })();
 
     return () => {
