@@ -7,8 +7,9 @@ function createWindow() {
     width: 1200,
     height: 800,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.cjs')
     },
     icon: path.join(__dirname, '../public/favicon.ico') // Adjust path as needed
   });
@@ -31,13 +32,14 @@ function createWindow() {
       return { action: 'deny' };
     }
     // Allow internal window.open (e.g., standalone routes)
-    return { 
+    return {
       action: 'allow',
       overrideBrowserWindowOptions: {
         autoHideMenuBar: true,
         webPreferences: {
-          nodeIntegration: true,
-          contextIsolation: false
+          nodeIntegration: false,
+          contextIsolation: true,
+          preload: path.join(__dirname, 'preload.cjs')
         }
       }
     };

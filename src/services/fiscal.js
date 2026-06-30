@@ -25,11 +25,10 @@ export const FiscalService = {
         const items = await db.sale_items.find({ selector: { sale_id: saleId } }).exec();
         sale.items = items.map(i => i.toJSON());
 
-        // Check if running in Electron
-        if (window.require) {
+        // Check if running in Electron (o preload expõe window.electronAPI via contextBridge)
+        if (window.electronAPI?.isElectron) {
             try {
-                const { ipcRenderer } = window.require('electron');
-                const result = await ipcRenderer.invoke('fiscal:emit', sale);
+                const result = await window.electronAPI.emitFiscal(sale);
 
                 if (result.success) {
                     // Update local sale with fiscal info
