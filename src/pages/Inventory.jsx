@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import clsx from 'clsx';
 import { useLocation } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
 import ProductForm from '../components/forms/ProductForm';
 import BarcodeScanner from '../components/ui/BarcodeScanner';
 import StockAdjustmentModal from '../components/modals/StockAdjustmentModal';
@@ -22,13 +21,12 @@ import XMLImporterModal from '../components/modals/XMLImporterModal';
 const Inventory = () => {
     const location = useLocation();
     const { t } = useLanguage();
-    const { getCurrencySymbol } = useTheme();
     const [products, setProducts] = useState([]);
     const [providers, setProviders] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
-    const [isFormOpen, setIsFormOpen] = useState(false);
+    const [, setIsFormOpen] = useState(false);
     const [saving, setSaving] = useState(false);
 
     // Filter State
@@ -50,7 +48,7 @@ const Inventory = () => {
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage] = useState(20);
-    const [totalItems, setTotalItems] = useState(0);
+    const [, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
 
     // Bulk Selection State
@@ -175,14 +173,6 @@ const Inventory = () => {
         return 'normal';
     };
 
-    const getProviderName = (prod) => {
-        if (prod.provider_id) {
-            const provider = providers.find(p => p.id === prod.provider_id);
-            return provider ? provider.name : (prod.last_supplier || '-');
-        }
-        return prod.last_supplier || '-';
-    };
-
     const handleScanSuccess = (decodedText) => {
         setSearch(decodedText);
         setIsScannerOpen(false);
@@ -197,12 +187,13 @@ const Inventory = () => {
         setIsBlindCountOpen(true);
     };
 
-    const handleEdit = (product) => {
+    // Fluxo de edição inline (não religado a um botão no momento — ProductForm não é montado).
+    const _handleEdit = (product) => {
         setEditingProduct(product);
         setIsFormOpen(true);
     };
 
-    const handleSave = async (formData) => {
+    const _handleSave = async (formData) => {
         try {
             setSaving(true);
             const payload = { ...formData };
@@ -336,7 +327,7 @@ const Inventory = () => {
                         onChange={e => setStockFilter(e.target.value)}
                     >
                         <option value="ALL" className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-300">{t('common', 'all')}</option>
-                        <option value="LOW" className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-300">âš ï¸ {t('inventory', 'status.lowStock')}</option>
+                        <option value="LOW" className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-300">âš ï¸ {t('inventory', 'status.lowStock')}</option>
                         <option value="EXPIRING" className="bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-300">â³ {t('dashboard', 'expiring')}</option>
                     </select>
                 </div>
@@ -381,9 +372,9 @@ const Inventory = () => {
                 <div className="hidden print:block mb-8 text-center pt-8">
                     <h1 className="text-2xl font-bold text-black mb-2">RelatÃ³rio de Estoque</h1>
                     <p className="text-sm text-gray-600">
-                        {stockFilter === 'LOW' ? 'âš ï¸ Produtos com Estoque Baixo' : 'PosiÃ§Ã£o Geral de Estoque'}
+                        {stockFilter === 'LOW' ? 'âš ï¸ Produtos com Estoque Baixo' : 'PosiÃ§Ã£o Geral de Estoque'}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">Gerado em: {new Date().toLocaleDateString()} Ã s {new Date().toLocaleTimeString()}</p>
+                    <p className="text-xs text-gray-500 mt-1">Gerado em: {new Date().toLocaleDateString()} Ã s {new Date().toLocaleTimeString()}</p>
                 </div>
 
                 <div className="rounded-[2rem] shadow-glass overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500 bg-white dark:bg-[#121212]/50 backdrop-blur-md border border-gray-200 dark:border-white/10">

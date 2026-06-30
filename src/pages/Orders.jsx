@@ -6,14 +6,12 @@ import {
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card } from '../components/ui/Card';
-import { useLanguage } from '../contexts/LanguageContext';
 import { getStatusInfo } from '../utils/statusHelper';
 import { OrdersService } from '../services/orders';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import clsx from 'clsx';
-import { useAuth } from '../contexts/AuthContext';
 
 const StatusBadge = ({ status, type }) => {
     // For Quotes show a special label
@@ -31,7 +29,6 @@ const StatusBadge = ({ status, type }) => {
 };
 
 const Orders = () => {
-    const { t } = useLanguage();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [orders, setOrders] = useState([]);

@@ -15,7 +15,7 @@ export const getCurrentUser = async () => {
             new Promise((_, reject) => setTimeout(() => reject(new Error('Auth timeout')), 5000))
         ]);
         return sessionRes?.data?.session?.user || null;
-    } catch (e) {
+    } catch {
         console.warn("Sessão auth offline ou timeout - operando com fallback estrito");
         
         try {

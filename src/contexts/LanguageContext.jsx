@@ -1,20 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
-const LanguageContext = createContext({});
-
 export const useLanguage = () => useContext(LanguageContext);
 
-export const LanguageProvider = ({ children }) => {
-    // Default to PT-BR, stored in localStorage
-    const [language, setLanguage] = useState(() => {
-        return localStorage.getItem('app_language') || 'pt';
-    });
-
-    useEffect(() => {
-        localStorage.setItem('app_language', language);
-    }, [language]);
-
-    const translations = {
+const translations = {
         pt: {
             common: {
                 save: "Salvar",
@@ -1329,21 +1317,38 @@ export const LanguageProvider = ({ children }) => {
         }
     };
 
-    const t = (section, key) => {
-        // Handle nested keys (e.g. 'form.supplier')
-        if (key.includes('.')) {
-            const keys = key.split('.');
-            let value = translations[language]?.[section] || translations['pt'][section];
+const translate = (language, section, key) => {
+    // Handle nested keys (e.g. 'form.supplier')
+    if (key.includes('.')) {
+        const keys = key.split('.');
+        let value = translations[language]?.[section] || translations['pt'][section];
 
-            for (const k of keys) {
-                value = value?.[k];
-                if (!value) return key; // Return key if path broken
-            }
-            return value;
+        for (const k of keys) {
+            value = value?.[k];
+            if (!value) return key; // Return key if path broken
         }
+        return value;
+    }
 
-        return translations[language]?.[section]?.[key] || key;
-    };
+    return translations[language]?.[section]?.[key] || key;
+};
+
+const LanguageContext = createContext({
+    language: 'pt',
+    setLanguage: () => {},
+    t: (section, key) => translate('pt', section, key),
+});
+
+export const LanguageProvider = ({ children }) => {
+    const [language, setLanguage] = useState(() => {
+        return localStorage.getItem('app_language') || 'pt';
+    });
+
+    useEffect(() => {
+        localStorage.setItem('app_language', language);
+    }, [language]);
+
+    const t = (section, key) => translate(language, section, key);
 
     return (
         <LanguageContext.Provider value={{ language, setLanguage, t }}>

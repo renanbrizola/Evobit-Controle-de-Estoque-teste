@@ -38,7 +38,7 @@ export const SecurityProvider = ({ children }) => {
     useEffect(() => {
         const storedLock = localStorage.getItem(LOCK_KEY);
         if (storedLock === 'true' && pinHash) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setIsLocked(true);
         }
     }, [pinHash]);

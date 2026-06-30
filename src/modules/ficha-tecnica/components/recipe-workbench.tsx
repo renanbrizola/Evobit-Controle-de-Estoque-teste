@@ -3,10 +3,8 @@
 import { Link } from 'react-router-dom';
 import { useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  useCallback,
   useEffect,
   useMemo,
-  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -57,7 +55,6 @@ import { getApiErrorMessage } from '../lib/api-errors';
 import {
   type InventoryCatalogItem,
   listCategories,
-  searchInventoryItems,
   listUoms,
 } from '../lib/inventory-management-api';
 import {

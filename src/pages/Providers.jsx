@@ -114,7 +114,7 @@ const Providers = () => {
                 const [prods, movs] = await Promise.all([api.products.list(), api.movements.list()]);
                 setAllProducts(prods.data || prods);
                 setAllMovements(movs);
-            } catch (e) { /* silent */ }
+            } catch { /* silent */ }
         } catch (error) {
             console.error(error);
             toast.error(t('common', 'error'));

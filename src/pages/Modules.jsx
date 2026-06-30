@@ -9,7 +9,7 @@ import clsx from 'clsx';
 import { toast } from 'sonner';
 
 const Modules = () => {
-    const { modules, hasModule, updateModules, resetModules } = useModules();
+    const { hasModule, updateModules, resetModules } = useModules();
     const { signOut, user } = useAuth();
     const { companyName } = useTheme();
     const navigate = useNavigate();

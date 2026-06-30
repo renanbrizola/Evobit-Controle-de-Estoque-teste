@@ -1,6 +1,5 @@
 import {
   normalizePercentage,
-  calculateIngredientCost,
   calculateRecipeTotalCosts,
   calculateSuggestedPrice,
   simulatePricingScenarios,

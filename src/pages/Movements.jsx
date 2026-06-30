@@ -35,7 +35,6 @@ const Movements = () => {
 
     // Quick Provider Add State
     const [isAddingProvider, setIsAddingProvider] = useState(false);
-    const [newProviderName, setNewProviderName] = useState('');
 
 
 
@@ -196,24 +195,6 @@ const Movements = () => {
         }
     };
 
-    const handleNewProvider = async () => {
-        if (!newProviderName || newProviderName.length < 3) {
-            toast.error("Nome do fornecedor muito curto");
-            return;
-        }
-        try {
-            const data = await api.providers.create({ name: newProviderName });
-            setProviders([...providers, data]);
-            setProvider(data.id); // Auto-select ID
-            setIsAddingProvider(false);
-            setNewProviderName('');
-            toast.success(t('providers', 'toast.created'));
-        } catch (error) {
-            toast.error(error.message || t('common', 'error'));
-            console.error(error);
-        }
-    };
-
     const addToCart = () => {
         if (!selectedProduct) {
             const match = products.find(p => p.name.toLowerCase() === search.toLowerCase());
@@ -298,24 +279,6 @@ const Movements = () => {
 
 
 
-    // Helper for Masks
-    const maskCNPJ = (value) => {
-        return value
-            .replace(/\D/g, '')
-            .replace(/^(\d{2})(\d)/, '$1.$2')
-            .replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
-            .replace(/\.(\d{3})(\d)/, '.$1/$2')
-            .replace(/(\d{4})(\d)/, '$1-$2')
-            .replace(/(-\d{2})\d+?$/, '$1');
-    };
-
-    const maskPhone = (value) => {
-        return value
-            .replace(/\D/g, '')
-            .replace(/(\d{2})(\d)/, '($1) $2')
-            .replace(/(\d{5})(\d)/, '$1-$2')
-            .replace(/(-\d{4})\d+?$/, '$1');
-    };
 
     const removeFromCart = (id) => {
         setCart(cart.filter(item => item.id !== id));
@@ -595,8 +558,6 @@ const Movements = () => {
                                         onChange={e => {
                                             if (e.target.value === 'NEW') {
                                                 setIsAddingProvider(true);
-                                                // Reset form just in case
-                                                setProviderForm({ name: '', cnpj: '', phone: '', seller: '', order_day: '', delivery_time: '', payment_terms: '', product_types: '' });
                                             } else {
                                                 setProvider(e.target.value);
                                             }

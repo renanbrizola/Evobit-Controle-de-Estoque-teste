@@ -156,7 +156,8 @@ const Dashboard = () => {
         }
     }
 
-    const handleGenerateTestData = async () => {
+    // Helper de DEV (gerador de dados de teste) — mantido, sem botão ligado no momento.
+    const _handleGenerateTestData = async () => {
         if (!user || !user.id) {
             toast.error("Usuário não identificado para gerar dados.");
             return;
@@ -390,12 +391,6 @@ const Dashboard = () => {
         };
 
     }, [rawData, dateRange, selectedCategory, t, language]);
-
-    // Unique Categories for Filter
-    const categories = useMemo(() => {
-        const cats = new Set(rawData.products.map(p => p.category).filter(Boolean));
-        return ['ALL', ...Array.from(cats)];
-    }, [rawData.products]);
 
     return (
         <div className="space-y-8 animate-in fade-in zoom-in-95 duration-700 pb-10">

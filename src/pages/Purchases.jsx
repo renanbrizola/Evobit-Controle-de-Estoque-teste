@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 const Purchases = () => {
     const [isCreating, setIsCreating] = useState(false);
     const [purchases, setPurchases] = useState([]);
-    const [stats, setStats] = useState({ total: 0, count: 0 });
+    const [, setStats] = useState({ total: 0, count: 0 });
 
 
 
@@ -31,7 +31,7 @@ const Purchases = () => {
 
     useEffect(() => {
         loadPurchases();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     }, []);
 
     const handleSavePurchase = (newPurchase) => {

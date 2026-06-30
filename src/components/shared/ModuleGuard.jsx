@@ -2,7 +2,6 @@ import React from 'react';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useModules } from '../../contexts/ModuleContext';
 import { Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 const ModuleGuard = ({ requiredModule }) => {
     const { modules, loading, checkDependency } = useModules();

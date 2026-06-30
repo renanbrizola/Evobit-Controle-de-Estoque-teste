@@ -5,13 +5,12 @@ import { Input } from '../ui/Input';
 import { X, Loader2, Target, ScanBarcode, ArrowRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
-import { useLanguage } from '../../contexts/LanguageContext';
 
 const BlindCountModal = ({ products = [], onClose, onSuccess }) => {
-    const { t } = useLanguage();
     const [loading, setLoading] = useState(false);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [countResults, setCountResults] = useState([]);
+    const [countedQty, setCountedQty] = useState('');
 
     // Auto-focus logic for rapid counting
     const inputRef = React.useRef(null);
@@ -29,7 +28,6 @@ const BlindCountModal = ({ products = [], onClose, onSuccess }) => {
     }
 
     const currentProduct = products[currentIndex];
-    const [countedQty, setCountedQty] = useState('');
 
     const handleNext = () => {
         if (countedQty === '' || isNaN(countedQty) || Number(countedQty) < 0) {

@@ -41,14 +41,6 @@ const createDatabase = async () => {
         return db;
     }
     try {
-        // Estratégias de migração
-        // Para collections na versão 2 (Migrar de 1 para 2)
-        const migrationV1toV2 = {
-            1: (doc) => {
-                // Generic migration for simple fields
-                return doc;
-            }
-        };
 
         // Specific migrations for V2 collections
         // Keys must be the TARGET version (1 = v0->v1, 2 = v1->v2)

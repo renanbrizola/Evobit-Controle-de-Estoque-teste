@@ -13,10 +13,6 @@ import { getToneClassName } from '../../modules/ficha-tecnica/mock/technical-she
 import { useWorkbookProductDetail, useWorkbookSnapshot } from '../../modules/ficha-tecnica/lib/workbook-api';
 import { useAuthStore } from '../../modules/ficha-tecnica/mock/auth.store';
 
-function formatMaybeMoney(value: number | null) {
-  return value === null ? '---' : formatBRL(value);
-}
-
 function formatMaybeMoneyPerUnit(value: number | null, unit: string) {
   return value === null ? '---' : `${formatBRL(value)}/${unit}`;
 }
@@ -304,7 +300,8 @@ export default function PricingPage() {
     }
   }
 
-  async function handleSimulate() {
+  // Mantida para a UI de simulação (em migração); ainda não religada a um botão.
+  async function _handleSimulate() {
     if (!selectedProduct?.recipeVersionId || isDemoSession) return;
     try {
       setLoading(true);

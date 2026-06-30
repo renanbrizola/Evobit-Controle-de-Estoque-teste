@@ -54,5 +54,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.js',
+    // Escopar a descoberta de testes ao src do projeto. Sem isso o vitest
+    // recursa para .claude/worktrees/** e roda os testes de outros worktrees.
+    include: ['src/**/*.{test,spec}.{js,jsx,ts,tsx}'],
+    exclude: ['**/node_modules/**', '**/dist/**', '**/dist_electron/**', '**/.claude/**', '**/android/**', '**/ios/**'],
   },
 })

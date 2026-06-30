@@ -27,7 +27,7 @@ const LicenseGuard = ({ children }) => {
 
     useEffect(() => {
         checkStatus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
     }, []);
 
     if (status === 'loading') {

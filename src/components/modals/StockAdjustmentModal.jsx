@@ -5,11 +5,9 @@ import { Input, Select } from '../ui/Input';
 import { X, ArrowRightLeft, Loader2, Package, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { api } from '../../services/api';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { maskCurrency } from '../../utils/masks';
 
 const StockAdjustmentModal = ({ product, onClose, onSuccess }) => {
-    const { t } = useLanguage();
     const [loading, setLoading] = useState(false);
     const [type, setType] = useState('Entrada'); // Entrada | Saída | Ajuste
     const [quantity, setQuantity] = useState('');

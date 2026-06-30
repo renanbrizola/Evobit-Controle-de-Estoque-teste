@@ -6,7 +6,6 @@ import { api } from '../services/api';
 import { toast } from 'sonner';
 import { Plus, Trash2, Tag, Loader2, Pencil, Check, X, Package, AlertTriangle, Search } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
-import clsx from 'clsx';
 
 const Categories = () => {
     const { t } = useLanguage();

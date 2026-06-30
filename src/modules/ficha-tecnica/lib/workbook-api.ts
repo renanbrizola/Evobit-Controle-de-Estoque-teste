@@ -344,11 +344,11 @@ export function useWorkbookProductDetail(code: string, isDemoSession: boolean) {
 
     if (isDemoSession) {
       // Demo bootstrap: synchronous state init from local mock data is intentional.
-      /* eslint-disable react-hooks/set-state-in-effect */
+       
       setData(buildMockProductDetail(code));
       setLoading(false);
       setSource('demo');
-      /* eslint-enable react-hooks/set-state-in-effect */
+       
       return;
     }
 

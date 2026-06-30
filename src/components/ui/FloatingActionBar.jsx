@@ -1,7 +1,6 @@
 import React from 'react';
 import { Trash2, Edit, Tag, X, CheckSquare, Target } from 'lucide-react';
 import { Button } from './Button';
-import clsx from 'clsx';
 
 const FloatingActionBar = ({
     selectedCount,

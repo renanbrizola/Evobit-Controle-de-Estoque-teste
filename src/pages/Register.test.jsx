@@ -56,13 +56,13 @@ describe('Register Component', () => {
         renderRegister();
 
         fireEvent.change(screen.getByLabelText(/^Email/i), { target: { value: 'newuser@example.com' } });
-        fireEvent.change(screen.getByLabelText(/^Senha/i), { target: { value: 'password123!' } });
-        fireEvent.change(screen.getByLabelText(/Confirmar Senha/i), { target: { value: 'password123!' } });
+        fireEvent.change(screen.getByLabelText(/^Senha/i), { target: { value: 'Password123!' } });
+        fireEvent.change(screen.getByLabelText(/Confirmar Senha/i), { target: { value: 'Password123!' } });
 
         fireEvent.click(screen.getByRole('button', { name: /Criar Conta/i }));
 
         await waitFor(() => {
-            expect(mockSignUp).toHaveBeenCalledWith('newuser@example.com', 'password123!');
+            expect(mockSignUp).toHaveBeenCalledWith('newuser@example.com', 'Password123!');
         });
     });
 });

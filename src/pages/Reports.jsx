@@ -130,7 +130,7 @@ const Reports = ({ standalone = false }) => {
     const [movements, setMovements] = useState([]);
     const [batches, setBatches] = useState([]);
     const [categories, setCategories] = useState([]);
-    const [providers, setProviders] = useState([]);
+    const [, setProviders] = useState([]);
     const [loading, setLoading] = useState(true);
 
     // Filters
@@ -858,9 +858,6 @@ const Reports = ({ standalone = false }) => {
             {activeTab === 'menu' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500 py-4">
                     {tabs.map(t => {
-                        // Extract base color (e.g., 'brand-primary' from 'text-brand-primary')
-                        const baseColorClass = t.color.replace('text-', '');
-                        
                         return (
                             <button
                                 key={t.id}

@@ -17,7 +17,6 @@ class XmlSigner {
 
         // Placeholder: Need to implement correct PFX -> Private Key extraction
         const privateKey = '---BEGIN PRIVATE KEY---...';
-        const certificate = '---BEGIN CERTIFICATE---...';
 
         const sig = new SignedXml();
         sig.addReference("//*[local-name(.)='infNFe']",

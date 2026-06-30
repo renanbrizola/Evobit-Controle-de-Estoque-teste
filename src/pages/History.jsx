@@ -6,14 +6,12 @@ import { ArrowUpRight, ArrowDownLeft, Calendar, Search, Loader2, Download, Chevr
 import { toast } from 'sonner';
 import clsx from 'clsx';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
 import { formatCurrency } from '../utils/formatters';
 
 const ITEMS_PER_PAGE = 20;
 
 const History = () => {
     const { t } = useLanguage();
-    const { getCurrencySymbol } = useTheme();
     const [movements, setMovements] = useState([]);
     const [loading, setLoading] = useState(true);
 

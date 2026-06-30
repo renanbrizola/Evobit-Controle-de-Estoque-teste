@@ -24,7 +24,7 @@ export const ModuleProvider = ({ children }) => {
         if (savedModules) {
             try {
                 const parsed = JSON.parse(savedModules);
-                // eslint-disable-next-line react-hooks/set-state-in-effect
+                 
                 setModules({
                     ...modules,
                     ...parsed,

@@ -48,7 +48,7 @@ const ProviderForm = ({ initialData, onSave, onCancel, saving }) => {
     // Initialize Data
     useEffect(() => {
         if (initialData) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setFormData({
                 name: initialData.name || '',
                 trade_name: initialData.trade_name || '',

@@ -14,12 +14,10 @@ import clsx from 'clsx';
 import ProductForm from '../components/forms/ProductForm';
 
 import { useLanguage } from '../contexts/LanguageContext';
-import { useTheme } from '../contexts/ThemeContext';
 import DataImporter from '../components/shared/DataImporter';
 
 const Products = () => {
     const { t } = useLanguage();
-    const { getCurrencySymbol } = useTheme();
     const [searchParams, setSearchParams] = useSearchParams();
     const tipo = searchParams.get('tipo');
     const [products, setProducts] = useState([]);

@@ -166,7 +166,7 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
                     if (state === 2) {
                         html5QrCodeRef.current.stop().catch(() => { });
                     }
-                } catch (e) {
+                } catch {
                     // ignore
                 }
             }

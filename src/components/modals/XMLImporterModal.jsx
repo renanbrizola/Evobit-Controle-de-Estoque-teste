@@ -106,8 +106,6 @@ const XMLImporterModal = ({ onClose, onSuccess }) => {
 
             for (const item of analysis.products) {
                 let finalProductId = null;
-                let currentCost = 0;
-                let currentQty = 0;
 
                 if (item.willBeCreated) {
                     // Create basic product
@@ -130,12 +128,8 @@ const XMLImporterModal = ({ onClose, onSuccess }) => {
                     };
                     const newProd = await api.products.create(newProdData);
                     finalProductId = newProd.id;
-                    currentCost = 0;
-                    currentQty = 0;
                 } else {
                     finalProductId = item.match.id;
-                    currentCost = item.match.cost_price || item.match.average_cost || 0;
-                    currentQty = item.match.current_stock || 0;
 
                     // Update the product cost and provider if it didn't have one? 
                     // Usually we don't overwrite blindly, but maybe update last_cost.

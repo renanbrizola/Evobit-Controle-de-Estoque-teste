@@ -14,6 +14,9 @@ vi.mock('../services/api', () => ({
         providers: {
             list: vi.fn(() => Promise.resolve([])),
         },
+        categories: {
+            list: vi.fn(() => Promise.resolve([])),
+        },
         movements: {
             createTransaction: vi.fn(() => Promise.resolve([])),
         }
@@ -32,7 +35,7 @@ vi.mock('sonner', () => ({
 const renderHome = () => {
     return render(
         <BrowserRouter>
-            <Home />
+            <Movements />
         </BrowserRouter>
     );
 };
@@ -41,26 +44,28 @@ describe('Home Component (Cart Logic)', () => {
     it('should render correctly', async () => {
         renderHome();
 
-        // Wait for async data loading
+        // Wait for the mode selector to render (entry/exit toggle buttons).
         await waitFor(() => {
-            expect(screen.getByText(/ENTRADA/i)).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /entrada/i })).toBeInTheDocument();
         });
 
-        const saidaElements = screen.getAllByText(/SAÍDA/i);
-        expect(saidaElements.length).toBeGreaterThan(0);
+        expect(screen.getByRole('button', { name: /saída/i })).toBeInTheDocument();
     });
 
     // Note: Testing complex interaction involves selecting from dropdown which is tricky in jsdom without user-event
     // complex setup. We will do a basic sanity check of rendering.
 
-    it('should switch modes', () => {
+    it('should switch modes', async () => {
         renderHome();
-        const btnEntry = screen.getByText(/ENTRADA/i);
-        fireEvent.click(btnEntry);
-        expect(screen.getByText(/Preço Total/i)).toBeInTheDocument();
 
-        const btnExit = screen.getByText(/^SAÍDA$/i); // Regex anchor to avoid button inside button text issues
+        const btnEntry = await screen.findByRole('button', { name: /entrada/i });
+        fireEvent.click(btnEntry);
+        // Entry mode shows the total-value field (label "Total (R$)").
+        expect(screen.getByText(/Total \(/i)).toBeInTheDocument();
+
+        const btnExit = screen.getByRole('button', { name: /saída/i });
         fireEvent.click(btnExit);
-        expect(screen.queryByText(/Preço Total/i)).not.toBeInTheDocument();
+        // Exit mode hides the total-value field.
+        expect(screen.queryByText(/Total \(/i)).not.toBeInTheDocument();
     });
 });

@@ -136,7 +136,7 @@ export const syncCollection = async (collection, tableName) => {
                         await localDoc.remove();
                         pulled++;
                     }
-                } catch (e) {
+                } catch {
                     // Ignore if not found
                 }
             }

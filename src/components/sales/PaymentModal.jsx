@@ -4,11 +4,9 @@ import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { formatCurrency } from '../../utils/formatters';
 import clsx from 'clsx';
-import { useLanguage } from '../../contexts/LanguageContext';
 import { toast } from 'sonner';
 
 const PaymentModal = ({ isOpen, onClose, total, onConfirm }) => {
-    const { t } = useLanguage();
 
     // State
     const [payments, setPayments] = useState([]);
@@ -23,7 +21,7 @@ const PaymentModal = ({ isOpen, onClose, total, onConfirm }) => {
     // Reset state when opening
     useEffect(() => {
         if (isOpen) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setPayments([]);
             setCurrentMethod('cash');
             setDiscountType('value');
@@ -59,7 +57,7 @@ const PaymentModal = ({ isOpen, onClose, total, onConfirm }) => {
     useEffect(() => {
         if (isOpen) {
             // Format with comma for Brazilian users
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setCurrentAmount(remaining.toFixed(2).replace('.', ','));
         }
     }, [payments, discountAmount, isOpen, remaining]);

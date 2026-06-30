@@ -6,10 +6,8 @@ import { CustomerService } from '../services/customers';
 import { Plus, Search, User, Phone, MapPin, Pencil, Trash2, Loader2, Mail } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import { toast } from 'sonner';
-import { useLanguage } from '../contexts/LanguageContext';
 
 const Customers = () => {
-    const { t } = useLanguage();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -60,7 +58,7 @@ const Customers = () => {
             await CustomerService.delete(id);
             toast.success('Cliente excluído');
             loadData();
-        } catch (error) {
+        } catch {
             toast.error('Erro ao excluir');
         }
     };

@@ -1,7 +1,6 @@
 import React from 'react';
 import { CheckCircle, Printer, FileText, X } from 'lucide-react';
 import { Button } from '../ui/Button';
-import { toast } from 'sonner';
 
 const SaleSuccessModal = ({ isOpen, onClose, onPrintReceipt, onEmitNFCe, saleId }) => {
     if (!isOpen) return null;

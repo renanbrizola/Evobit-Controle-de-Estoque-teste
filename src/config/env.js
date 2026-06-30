@@ -6,7 +6,7 @@ const envSchema = z.object({
 });
 
 // Skip validation in test environment to prevent crash during smoke tests
-const isTest = import.meta.env.MODE === 'test' || process.env.NODE_ENV === 'test';
+const isTest = import.meta.env.MODE === 'test' || (typeof globalThis !== 'undefined' && globalThis.process?.env?.NODE_ENV === 'test');
 if (isTest) {
     console.log("Test environment detected, skipping strict env validation");
 }

@@ -2,14 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { Input, Select, Textarea } from '../ui/Input';
 import { Package, Save, Barcode, DollarSign, Layers, Tag, Ruler, Truck, FileText, Info, MapPin } from 'lucide-react';
-import { useModules } from '../../contexts/ModuleContext';
 import { toast } from 'sonner';
 import { Tabs } from '../ui/Tabs';
 
 
 const ProductForm = ({ initialData, onSave, onCancel, saving, categories = [], providers = [] }) => {
-    const { modules } = useModules();
-
 
 
     // Default State for all ERP fields
@@ -60,7 +57,7 @@ const ProductForm = ({ initialData, onSave, onCancel, saving, categories = [], p
     // Initialize Data
     useEffect(() => {
         if (initialData) {
-            // eslint-disable-next-line react-hooks/set-state-in-effect
+             
             setFormData({
                 name: initialData.name || '',
                 sku: initialData.sku || '',

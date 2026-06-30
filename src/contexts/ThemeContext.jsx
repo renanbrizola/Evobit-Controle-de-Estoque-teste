@@ -3,7 +3,15 @@ import { supabase } from '../lib/supabaseClient';
 import { useAuth } from './AuthContext';
 import { toast } from 'sonner';
 
-const ThemeContext = createContext({});
+// Defaults garantem que componentes que leem o tema funcionem mesmo sem um
+// ThemeProvider acima (ex.: testes unitários isolados). O provider sobrescreve.
+const ThemeContext = createContext({
+    companyName: 'Evobit App',
+    currency: 'BRL',
+    loadingSettings: false,
+    updateSettings: () => {},
+    getCurrencySymbol: () => 'R$',
+});
 
 export const useTheme = () => useContext(ThemeContext);
 

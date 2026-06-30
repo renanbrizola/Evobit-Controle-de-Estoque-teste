@@ -27,7 +27,6 @@ export const parseNFeXML = (xmlString) => {
 
         const emit = infNFe.emit;
         const ide = infNFe.ide;
-        const dest = infNFe.dest; // Destinatário (a loja)
         const total = infNFe.total?.ICMSTot;
 
         // 1. Extract Provider (Emitente)

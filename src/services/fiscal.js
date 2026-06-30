@@ -1,4 +1,3 @@
-import { supabase } from '../lib/supabaseClient';
 import { getDatabase } from '../db/database';
 
 export const FiscalService = {

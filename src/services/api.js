@@ -25,7 +25,6 @@ export const api = {
 
             // 1. Search (Regex-like)
             if (search) {
-                const searchRegex = { $regex: new RegExp(search, 'i') };
                 // RxDB/Mango queries are limited for OR across fields without specific plugins
                 // For simplicity/performance in local-first, we might fetch broader and filter memory for SEARCH
                 // ensuring we don't break the query.
