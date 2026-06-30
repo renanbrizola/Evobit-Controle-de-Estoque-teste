@@ -8,7 +8,6 @@ import {
   WorkbookProductRowDto,
   WorkbookSnapshotDto,
 } from '../types/enums';
-import api from '../lib/api';
 import { listWorkbookInputs } from './inventory-management-api';
 import { fetchWorkbookSections, emptyWorkbookSections } from './workbook-data-api';
 import {
@@ -340,11 +339,9 @@ export function useWorkbookProductDetail(code: string, isDemoSession: boolean) {
   const reload = useCallback(() => setRefreshKey((k) => k + 1), []);
 
   useEffect(() => {
-    let active = true;
-
     if (isDemoSession) {
       // Demo bootstrap: synchronous state init from local mock data is intentional.
-       
+
       setData(buildMockProductDetail(code));
       setLoading(false);
       setSource('demo');
@@ -352,30 +349,11 @@ export function useWorkbookProductDetail(code: string, isDemoSession: boolean) {
       return;
     }
 
-    setLoading(true);
-
-    api.get<{ success: boolean; data: WorkbookProductDetailDto }>(`/reports/workbook/products/${code}`)
-      .then((response) => {
-        if (!active) return;
-        const payload = response.data.data;
-        if (!payload || !payload.breakdown) {
-          throw new Error('Payload vazio ou invǭlido retornado da API local.');
-        }
-        setData(payload);
-        setSource('api');
-      })
-      .catch(() => {
-        if (!active) return;
-        setData(buildMockProductDetail(code));
-        setSource('demo');
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-
-    return () => {
-      active = false;
-    };
+    // Sem backend real para o detalhe do produto (o antigo api.get era um stub
+    // que sempre caía no mock). Mantém o mock até existir a fonte real.
+    setData(buildMockProductDetail(code));
+    setSource('demo');
+    setLoading(false);
   }, [code, isDemoSession, refreshKey]);
 
   return { data, loading, source, reload };
