@@ -126,10 +126,16 @@ export const syncCollection = async (collection, tableName) => {
                     const toUpsert = [];
                     for (const remote of activeChanges) {
                         const localDoc = await collection.findOne(remote.id).exec();
-                        const localTs = localDoc?.get(timestampField);
-                        if (!localDoc || !localTs || remote[timestampField] > localTs) {
-                            toUpsert.push(remote);
+                        if (localDoc) {
+                            // Nunca ressuscitar um doc deletado localmente (tombstone
+                            // ainda nao sincronizado) — era o produto "voltando".
+                            if (localDoc.get('deleted_at')) continue;
+                            // Last-write-wins: o remoto so sobrescreve se for
+                            // estritamente mais novo que o local.
+                            const localTs = localDoc.get(timestampField);
+                            if (localTs && remote[timestampField] <= localTs) continue;
                         }
+                        toUpsert.push(remote);
                     }
                     if (toUpsert.length > 0) {
                         await collection.bulkUpsert(toUpsert);
