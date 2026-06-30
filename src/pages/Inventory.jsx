@@ -133,14 +133,19 @@ const Inventory = () => {
     const handleBulkDelete = async () => {
         if (!confirm(`Deseja excluir ${selectedIds.length} produtos?`)) return;
 
+        const idsToDelete = selectedIds;
+        // Remoção otimista: some da lista na hora, sem esperar o reload/spinner.
+        setProducts(prev => prev.filter(p => !idsToDelete.includes(p.id)));
+        setTotalItems(prev => Math.max(0, prev - idsToDelete.length));
+        setSelectedIds([]);
+
         try {
-            await api.products.bulkDelete(selectedIds);
-            toast.success(`${selectedIds.length} produtos excluídos!`);
-            setSelectedIds([]);
-            loadData();
+            await api.products.bulkDelete(idsToDelete);
+            toast.success(`${idsToDelete.length} produtos excluídos!`);
         } catch (error) {
             console.error(error);
             toast.error("Erro ao excluir produtos");
+            loadData(); // reverte para o estado real em caso de erro
         }
     };
 
