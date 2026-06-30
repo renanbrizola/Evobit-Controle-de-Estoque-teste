@@ -8,7 +8,7 @@ import { Search, ShoppingBag, Trash2, ArrowDownCircle, ArrowUpCircle, Loader2, E
 import { toast } from 'sonner';
 import { api } from '../services/api';
 import clsx from 'clsx';
-import { AnimatePresence, motion } from 'framer-motion'; // eslint-disable-line no-unused-vars
+import { AnimatePresence, motion } from 'framer-motion';
 import { v4 as uuidv4 } from 'uuid';
 import BarcodeScanner from '../components/ui/BarcodeScanner';
 import Modal from '../components/ui/Modal';

@@ -2,6 +2,7 @@ import js from '@eslint/js'
 import globals from 'globals'
 import reactHooks from 'eslint-plugin-react-hooks'
 import reactRefresh from 'eslint-plugin-react-refresh'
+import reactPlugin from 'eslint-plugin-react'
 import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
@@ -63,6 +64,14 @@ export default defineConfig([
       // a few adapter/API boundaries; typing those properly is a separate effort.
       '@typescript-eslint/no-explicit-any': 'off',
     },
+  },
+  // Reconhece uso de identificadores em JSX (ex.: <motion.div>). Sem isto, o
+  // core no-unused-vars marca como "não usado" um import usado só no JSX e
+  // alguém acaba removendo (quebra em runtime).
+  {
+    files: ['**/*.{js,jsx,ts,tsx}'],
+    plugins: { react: reactPlugin },
+    rules: { 'react/jsx-uses-vars': 'error' },
   },
   // Regras desligadas de forma deliberada (aplicam-se a todos os arquivos):
   // - only-export-components: nicety de HMR (Fast Refresh), sem valor em produção.
