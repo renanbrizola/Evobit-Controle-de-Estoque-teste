@@ -143,7 +143,14 @@ export const api = {
                 }
             }).exec();
 
-            await Promise.all(docs.map(doc => doc.remove()));
+            // Soft-delete (tombstone) para que a exclusão sincronize ao Supabase
+            // em vez de só sumir localmente e voltar no proximo pull.
+            const now = new Date().toISOString();
+            await Promise.all(docs.map(doc => doc.incrementalPatch({
+                deleted_at: now,
+                updated_at: now,
+                is_active: false
+            })));
             return docs.length;
         },
         create: async (product) => {
@@ -237,7 +244,14 @@ export const api = {
             const db = await getDatabase();
             const productDoc = await db.products.findOne(id).exec();
             if (productDoc) {
-                await productDoc.remove();
+                // Soft-delete: marca o tombstone (deleted_at) para que a exclusão
+                // seja sincronizada ao Supabase. Um remove() local "duro" não
+                // propaga, e o produto voltava no proximo pull.
+                await productDoc.incrementalPatch({
+                    deleted_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    is_active: false
+                });
             }
         }
     },
