@@ -15,7 +15,14 @@ export const AuthProvider = ({ children }) => {
 
         async function initSession() {
             try {
-                const { data: { session }, error } = await supabase.auth.getSession();
+                // Protege o boot: se getSession travar (ex.: navigator.locks no
+                // Electron), segue sem sessao em vez de ficar preso na tela branca.
+                const { data: { session }, error } = await Promise.race([
+                    supabase.auth.getSession(),
+                    new Promise((resolve) =>
+                        setTimeout(() => resolve({ data: { session: null }, error: null }), 4000)
+                    ),
+                ]);
                 if (error) throw error;
 
                 if (mounted) {
