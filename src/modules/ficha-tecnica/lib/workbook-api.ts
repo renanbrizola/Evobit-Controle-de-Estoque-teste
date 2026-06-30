@@ -271,7 +271,10 @@ function buildMockProductDetail(code: string): WorkbookProductDetailDto | null {
 
 export function useWorkbookSnapshot(isDemoSession: boolean) {
   const [data, setData] = useState<WorkbookSnapshotDto>(() =>
-    isDemoSession ? buildMockSnapshot() : { ...buildMockSnapshot(), ...emptyWorkbookSections() }
+    // Sessao real: comeca SEM insumos mock (agua/farinha). Eles vinham do
+    // buildMockSnapshot e piscavam na tela antes dos insumos reais carregarem
+    // (emptyWorkbookSections limpa as secoes, mas nao os inputs).
+    isDemoSession ? buildMockSnapshot() : { ...buildMockSnapshot(), ...emptyWorkbookSections(), inputs: [] }
   );
   const [loading, setLoading] = useState(!isDemoSession);
   const [source, setSource] = useState<'demo' | 'api'>(isDemoSession ? 'demo' : 'api');
