@@ -117,11 +117,24 @@ export const syncCollection = async (collection, tableName) => {
             const activeChanges = remoteChanges.filter(item => !item.deleted_at);
             const deletedChanges = remoteChanges.filter(item => item.deleted_at);
 
-            // Upsert active items
+            // Upsert active items — mas SEM sobrescrever docs cujo estado LOCAL
+            // e mais novo (alteracoes locais ainda nao enviadas, ex.: um
+            // soft-delete que o pull traria de volta como ativo). Last-write-wins
+            // por updated_at: o remoto so vence se for estritamente mais novo.
             if (activeChanges.length > 0) {
                 try {
-                    await collection.bulkUpsert(activeChanges);
-                    pulled += activeChanges.length;
+                    const toUpsert = [];
+                    for (const remote of activeChanges) {
+                        const localDoc = await collection.findOne(remote.id).exec();
+                        const localTs = localDoc?.get(timestampField);
+                        if (!localDoc || !localTs || remote[timestampField] > localTs) {
+                            toUpsert.push(remote);
+                        }
+                    }
+                    if (toUpsert.length > 0) {
+                        await collection.bulkUpsert(toUpsert);
+                        pulled += toUpsert.length;
+                    }
                 } catch (upsertErr) {
                     errors.push(`[PULL-UPSERT ${tableName}] ${upsertErr.message}`);
                     console.error(`Sync pull upsert error ${tableName}:`, upsertErr);
