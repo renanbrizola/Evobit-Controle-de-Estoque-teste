@@ -9,6 +9,7 @@ import {
   WorkbookSnapshotDto,
 } from '../types/enums';
 import { listWorkbookInputs } from './inventory-management-api';
+import { listWorkbookProducts } from './recipes-management-api';
 import { fetchWorkbookSections, emptyWorkbookSections } from './workbook-data-api';
 import {
   depreciationExpenses,
@@ -271,10 +272,10 @@ function buildMockProductDetail(code: string): WorkbookProductDetailDto | null {
 
 export function useWorkbookSnapshot(isDemoSession: boolean) {
   const [data, setData] = useState<WorkbookSnapshotDto>(() =>
-    // Sessao real: comeca SEM insumos mock (agua/farinha). Eles vinham do
-    // buildMockSnapshot e piscavam na tela antes dos insumos reais carregarem
-    // (emptyWorkbookSections limpa as secoes, mas nao os inputs).
-    isDemoSession ? buildMockSnapshot() : { ...buildMockSnapshot(), ...emptyWorkbookSections(), inputs: [] }
+    // Sessao real: comeca SEM insumos/produtos mock (agua/farinha, "Pao de queijo"...).
+    // Eles vinham do buildMockSnapshot e piscavam na tela antes dos dados reais
+    // carregarem (emptyWorkbookSections limpa as secoes, mas nao inputs/products).
+    isDemoSession ? buildMockSnapshot() : { ...buildMockSnapshot(), ...emptyWorkbookSections(), inputs: [], products: [] }
   );
   const [loading, setLoading] = useState(!isDemoSession);
   const [source, setSource] = useState<'demo' | 'api'>(isDemoSession ? 'demo' : 'api');
@@ -301,12 +302,19 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
       // Mescla no estado ANTERIOR: o que falhar (transitório) NÃO sobrescreve com
       // mock — evita o "às vezes aparece o cadastro antigo". O erro real é logado.
       let inputs: WorkbookSnapshotDto['inputs'] | undefined;
+      let products: WorkbookSnapshotDto['products'] | undefined;
       let sections: Partial<WorkbookSnapshotDto> | undefined;
 
       try {
         inputs = await listWorkbookInputs();
       } catch (err) {
         console.error('[workbook] falha ao carregar insumos reais:', err);
+      }
+
+      try {
+        products = await listWorkbookProducts();
+      } catch (err) {
+        console.error('[workbook] falha ao carregar produtos reais:', err);
       }
 
       try {
@@ -319,6 +327,7 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
       setData((prev) => ({
         ...prev,
         ...(inputs ? { inputs } : {}),
+        ...(products ? { products } : {}),
         ...(sections ?? {}),
       }));
       setSource('api');
