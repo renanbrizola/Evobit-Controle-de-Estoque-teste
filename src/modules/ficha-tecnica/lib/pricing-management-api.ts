@@ -3,7 +3,7 @@
 import { api } from '../../../services/api';
 import { supabase } from '../../../lib/supabaseClient';
 import { getCurrentUser } from '../../../services/authHelper';
-import { getRecipe, listWorkbookProducts } from './recipes-management-api';
+import { getRecipe, listWorkbookProducts, resetCache } from './recipes-management-api';
 import { calculateSuggestedPrice, simulatePricingScenarios } from './pricing-calculator';
 
 export interface PricingSimulationPayload {
@@ -269,6 +269,9 @@ export async function savePrice(payload: SavePricePayload): Promise<PriceRow> {
 
   // Persiste o preco de venda no produto vinculado a receita.
   await api.products.update(recipe.finished_product_id, { price: finalPrice });
+  // Invalida o cache de produtos para o overview refletir o novo preco no reload
+  // (loadProductsCache carrega "uma vez"; sem isto, ficava mostrando "---").
+  resetCache();
 
   const totalFeesFraction =
     ((payload.cardFeePercent ?? 0) +
@@ -329,47 +332,53 @@ export async function savePrice(payload: SavePricePayload): Promise<PriceRow> {
 
 export async function listPrices(): Promise<PriceRow[]> {
   const [products, records] = await Promise.all([listWorkbookProducts(), fetchPriceRecords()]);
+  const productByRecipe = new Map(products.map((p) => [p.recipeId, p]));
+  const rows: PriceRow[] = [];
 
-  return products
-    .filter((p) => p.salePrice != null && Number(p.salePrice) > 0)
-    .map((p): PriceRow => {
-      // Se ha um registro salvo (ft_prices), usa o breakdown real e completa o nome.
-      const stored = records.get(p.recipeId);
-      if (stored) {
-        return {
-          ...stored,
-          recipe: { id: p.recipeId, name: p.recipeName },
-          recipeVersion: { id: p.recipeVersionId, versionNumber: p.versionNumber },
-        };
-      }
-
-      const finalPrice = Number(p.salePrice ?? 0);
-      const unitCost = Number(p.totalCost ?? 0);
-      return {
-        id: p.recipeId,
-        recipeId: p.recipeId,
-        recipeVersionId: p.recipeVersionId,
-        pricingUnit: p.pricingUnit ?? null,
-        status: 'ACTIVE',
-        targetMarginPercent: Number(p.marginPercent ?? 0),
-        cardFeePercent: 0,
-        deliveryFeePercent: 0,
-        commissionPercent: 0,
-        taxPercent: 0,
-        operationalCostPercent: 0,
-        unitCost,
-        suggestedPrice: Number(p.suggestedPrice ?? finalPrice),
-        finalPrice,
-        marginPercent: Number(p.marginPercent ?? 0),
-        markupFactor: unitCost > 0 ? finalPrice / unitCost : 0,
-        cmvPercent: Number(p.cmvPercent ?? 0),
-        notes: null,
-        createdAt: p.updatedAt,
-        recipe: { id: p.recipeId, name: p.recipeName },
-        recipeVersion: { id: p.recipeVersionId, versionNumber: p.versionNumber },
-        approvedBy: null,
-      };
+  // 1. Registros salvos (ft_prices) — SEMPRE no historico, com o breakdown real.
+  //    Nao dependem do salePrice do cache de produtos (que pode estar velho).
+  for (const [recipeId, stored] of records) {
+    const p = productByRecipe.get(recipeId);
+    rows.push({
+      ...stored,
+      recipe: { id: recipeId, name: p?.recipeName ?? stored.recipe.name ?? 'Sem nome' },
+      recipeVersion: p ? { id: p.recipeVersionId, versionNumber: p.versionNumber } : stored.recipeVersion,
     });
+  }
+
+  // 2. Produtos com preco > 0 sem registro salvo (derivado; taxas desconhecidas = 0).
+  for (const p of products) {
+    if (records.has(p.recipeId)) continue;
+    if (p.salePrice == null || Number(p.salePrice) <= 0) continue;
+    const finalPrice = Number(p.salePrice ?? 0);
+    const unitCost = Number(p.totalCost ?? 0);
+    rows.push({
+      id: p.recipeId,
+      recipeId: p.recipeId,
+      recipeVersionId: p.recipeVersionId,
+      pricingUnit: p.pricingUnit ?? null,
+      status: 'ACTIVE',
+      targetMarginPercent: Number(p.marginPercent ?? 0),
+      cardFeePercent: 0,
+      deliveryFeePercent: 0,
+      commissionPercent: 0,
+      taxPercent: 0,
+      operationalCostPercent: 0,
+      unitCost,
+      suggestedPrice: Number(p.suggestedPrice ?? finalPrice),
+      finalPrice,
+      marginPercent: Number(p.marginPercent ?? 0),
+      markupFactor: unitCost > 0 ? finalPrice / unitCost : 0,
+      cmvPercent: Number(p.cmvPercent ?? 0),
+      notes: null,
+      createdAt: p.updatedAt ?? new Date().toISOString(),
+      recipe: { id: p.recipeId, name: p.recipeName },
+      recipeVersion: { id: p.recipeVersionId, versionNumber: p.versionNumber },
+      approvedBy: null,
+    });
+  }
+
+  return rows;
 }
 
 export async function approvePrice(_id: string): Promise<PriceRow> {
