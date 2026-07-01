@@ -188,8 +188,15 @@ export default function InputCatalogPage() {
   }, [form.supplierId, suppliers]);
 
   const loadSupportCatalogs = useCallback(async () => {
-    const [uomRows, categoryRows, supplierRows] = await Promise.all([listUoms(), listCategories(), listSuppliers()]);
-    setUoms(uomRows);
+    // UOMs sao fixas (nao dependem do banco): libera o form assim que prontas,
+    // SEM esperar categorias/fornecedores. Uma lentidao/falha nesses nao pode
+    // mais travar o cadastro de insumo (o botao ficava cinza pra sempre).
+    setUoms(await listUoms());
+    setLoadingOptions(false);
+    const [categoryRows, supplierRows] = await Promise.all([
+      listCategories().catch(() => []),
+      listSuppliers().catch(() => []),
+    ]);
     setCategories(categoryRows);
     setSuppliers(supplierRows);
   }, []);
