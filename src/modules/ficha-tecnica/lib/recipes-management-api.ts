@@ -687,7 +687,7 @@ export async function listWorkbookProducts(
   const operational = Number(profile.operationalCostPercent ?? 0);
   const totalFeesFraction = (cardFee + deliveryFee + commission + tax + operational) / 100;
 
-  return recipes.map((recipe): WorkbookProductRowDto => {
+  return recipes.map((recipe, index): WorkbookProductRowDto => {
     const { totalCost } = calculateCost(recipe.ingredients);
     const yieldQuantity = Number(recipe.yield_quantity) || 1;
     const unitCost = yieldQuantity > 0 ? totalCost / yieldQuantity : totalCost;
@@ -712,7 +712,7 @@ export async function listWorkbookProducts(
     const contributionMargin = salePrice > 0 ? salePrice - unitCost - salePrice * totalFeesFraction : null;
 
     return {
-      code: recipe.id,
+      code: (product?.sku && String(product.sku).trim()) || `P${String(index + 1).padStart(2, '0')}`,
       recipeId: recipe.id,
       recipeName: recipe.name || 'Sem nome',
       productType: 'FINAL',
