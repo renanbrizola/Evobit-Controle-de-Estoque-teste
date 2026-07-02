@@ -768,7 +768,7 @@ export default function CompoundInputsPage() {
                       <tbody>
                         {currentIngredients.map((row) => {
                           const refId = row.inventoryItemId ?? row.subRecipeId ?? '';
-                          const costLine = costBreakdown?.ingredients.find((c) => c.itemId === refId);
+                          const costLine = costBreakdown?.ingredients?.find((c) => c.itemId === refId);
                           return (
                             <tr key={row.id} className="border-b border-gray-100 transition-colors last:border-0 hover:bg-gray-50/60">
                               <td className="px-4 py-3 font-medium text-gray-800">{getIngredientLabel(row)}</td>

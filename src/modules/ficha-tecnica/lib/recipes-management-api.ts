@@ -515,8 +515,47 @@ export async function approveRecipeVersion(recipeId: string, _versionId: string)
 export async function recalculateRecipeVersion(recipeId: string, _versionId: string) {
   return (await getRecipe(recipeId)).versions[0];
 }
-export async function getCostBreakdown(_versionId: string) {
-  return { materials: 0, labor: 0, equipment: 0, packaging: 0, overhead: 0, total: 0 };
+export async function getCostBreakdown(versionId: string): Promise<CostBreakdownDto> {
+  // versionId tem o formato `${recipeId}-v1` (ver listWorkbookProducts/getRecipe).
+  const recipeId = String(versionId || '').replace(/-v\d+$/, '');
+  await loadProductsCache();
+  const recipe = await api.recipes.getById(recipeId);
+
+  const ingredients = (recipe?.ingredients || []).map((ing: any) => {
+    const prod = cachedProductsMap.get(ing.input_product_id);
+    const unitPrice = prod ? getProductCost(prod.id) : 0;
+    const lossPercentage = Number(ing.loss_percentage) || 0;
+    const qtyWithLoss = Number(ing.quantity) * (1 + lossPercentage / 100);
+    return {
+      itemId: ing.input_product_id,
+      name: prod?.name || 'Ingrediente',
+      quantity: Number(ing.quantity),
+      uom: ing.unit || prod?.unit || 'UN',
+      unitPrice,
+      lineCost: qtyWithLoss * unitPrice,
+      missingPrice: unitPrice <= 0,
+    };
+  });
+
+  const totalIngredientsCost = ingredients.reduce((sum: number, i: any) => sum + i.lineCost, 0);
+  const yieldQuantity = Number(recipe?.yield_quantity) || 1;
+
+  return {
+    recipeId,
+    recipeVersionId: versionId,
+    yieldQuantity,
+    ingredients,
+    packaging: [],
+    labor: [],
+    equipment: [],
+    totalIngredientsCost,
+    totalPackagingCost: 0,
+    totalLaborCost: 0,
+    totalEquipmentCost: 0,
+    totalBatchCost: totalIngredientsCost,
+    unitCost: yieldQuantity > 0 ? totalIngredientsCost / yieldQuantity : totalIngredientsCost,
+    currency: 'BRL',
+  } as CostBreakdownDto;
 }
 
 // =======================
