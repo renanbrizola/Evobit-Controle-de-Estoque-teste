@@ -454,19 +454,36 @@ export async function createRecipe(payload: RecipePayload): Promise<RecipeDetail
   // (que filtra por is_raw_material) nunca mostra o que foi criado.
   if (!finishedProductId) {
     const isCompound = payload.productType === 'SUB_RECEITA';
-    let categoryName = '';
-    if (payload.categoryId) {
-      const catRes = await api.categories.list();
-      const cats = Array.isArray(catRes) ? catRes : (catRes.items || []);
-      categoryName = cats.find((c: any) => c.id === payload.categoryId)?.name || '';
+    const productName = (payload.name || 'Nova Ficha').trim();
+
+    // Reusa produto existente com o mesmo nome: o Supabase tem
+    // unique(user_id, name) em products — criar duplicata local faz o push
+    // falhar pra sempre (duplicate key) e a receita quebrar na nuvem (FK).
+    await loadProductsCache();
+    const existing = cachedProducts.find(
+      (p: any) => !p.deleted_at && String(p.name || '').trim().toLowerCase() === productName.toLowerCase()
+    );
+
+    if (existing) {
+      finishedProductId = existing.id;
+      if (isCompound && existing.is_raw_material !== true) {
+        await api.products.update(existing.id, { is_raw_material: true });
+      }
+    } else {
+      let categoryName = '';
+      if (payload.categoryId) {
+        const catRes = await api.categories.list();
+        const cats = Array.isArray(catRes) ? catRes : (catRes.items || []);
+        categoryName = cats.find((c: any) => c.id === payload.categoryId)?.name || '';
+      }
+      const product = await api.products.create({
+        name: productName,
+        category: categoryName,
+        unit: 'UN',
+        is_raw_material: isCompound,
+      });
+      finishedProductId = product.id;
     }
-    const product = await api.products.create({
-      name: payload.name || 'Nova Ficha',
-      category: categoryName,
-      unit: 'UN',
-      is_raw_material: isCompound,
-    });
-    finishedProductId = product.id;
   }
 
   const recipe = await api.recipes.create({
