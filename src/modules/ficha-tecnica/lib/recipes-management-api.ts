@@ -448,10 +448,12 @@ export async function getRecipe(id: string): Promise<RecipeDetail> {
 export async function createRecipe(payload: RecipePayload): Promise<RecipeDetail> {
   let finishedProductId = payload.finishedProductId;
 
-  // Catalogo unificado: sem produto vinculado, cria o produto final
-  // automaticamente a partir do nome da ficha (vira um produto final no
-  // cadastro de Produtos, is_raw_material = false).
+  // Catalogo unificado: sem produto vinculado, cria o produto automaticamente
+  // a partir do nome da ficha. Ficha final -> produto final; SUB_RECEITA
+  // (insumo composto) -> is_raw_material TRUE, senao a listagem de compostos
+  // (que filtra por is_raw_material) nunca mostra o que foi criado.
   if (!finishedProductId) {
+    const isCompound = payload.productType === 'SUB_RECEITA';
     let categoryName = '';
     if (payload.categoryId) {
       const catRes = await api.categories.list();
@@ -462,7 +464,7 @@ export async function createRecipe(payload: RecipePayload): Promise<RecipeDetail
       name: payload.name || 'Nova Ficha',
       category: categoryName,
       unit: 'UN',
-      is_raw_material: false,
+      is_raw_material: isCompound,
     });
     finishedProductId = product.id;
   }
