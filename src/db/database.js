@@ -223,6 +223,13 @@ const createDatabase = async () => {
                     });
                 }
                 return doc;
+            },
+            5: function (doc) {
+                // v4 -> v5: custos adicionais do lote (embalagens/mao de obra/equipamentos)
+                doc.packaging_entries = doc.packaging_entries || [];
+                doc.labor_entries = doc.labor_entries || [];
+                doc.equipment_entries = doc.equipment_entries || [];
+                return doc;
             }
         };
 

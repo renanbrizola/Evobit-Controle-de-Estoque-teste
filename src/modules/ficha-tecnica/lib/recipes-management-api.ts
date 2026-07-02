@@ -410,7 +410,9 @@ export async function getRecipe(id: string): Promise<RecipeDetail> {
   
   if (!recipe) throw new Error('Receita não encontrada');
 
-  const { totalCost, mappedIngredients } = calculateCost(recipe.ingredients);
+  const { totalCost: ingredientsCost, mappedIngredients } = calculateCost(recipe.ingredients);
+  const entryCosts = computeEntryCosts(recipe);
+  const totalCost = ingredientsCost + entryCosts.extras;
   const yq = Number(recipe.yield_quantity) || 1;
   const unitCost = yq > 0 ? totalCost / yq : totalCost;
 
@@ -429,9 +431,27 @@ export async function getRecipe(id: string): Promise<RecipeDetail> {
       stepNumber: 1,
       description: recipe.instructions
     }] : [],
-    packagings: [],
-    laborEntries: [],
-    equipmentEntries: []
+    packagings: (recipe.packaging_entries || []).map((e: any) => ({
+      id: e.id,
+      name: e.name || '',
+      quantity: Number(e.quantity) || 0,
+      unitCost: Number(e.unit_cost) || 0,
+    })),
+    laborEntries: (recipe.labor_entries || []).map((e: any) => ({
+      id: e.id,
+      role: e.role || '',
+      minutes: Number(e.minutes) || 0,
+      monthlySalary: Number(e.monthly_salary) || 0,
+      monthlyHours: Number(e.monthly_hours) || 0,
+    })),
+    equipmentEntries: (recipe.equipment_entries || []).map((e: any) => ({
+      id: e.id,
+      name: e.name || '',
+      type: (e.type || 'ELECTRIC') as EquipmentType,
+      hoursUsed: Number(e.hours_used) || 0,
+      consumptionPerHour: Number(e.consumption_per_hour) || 0,
+      utilityRate: Number(e.utility_rate) || 0,
+    })),
   };
 
   return {
@@ -559,20 +579,50 @@ export async function getCostBreakdown(versionId: string): Promise<CostBreakdown
   const totalIngredientsCost = ingredients.reduce((sum: number, i: any) => sum + i.lineCost, 0);
   const yieldQuantity = Number(recipe?.yield_quantity) || 1;
 
+  const packaging = (recipe?.packaging_entries || []).map((e: any) => ({
+    itemId: e.id,
+    name: e.name || 'Embalagem',
+    quantity: Number(e.quantity) || 0,
+    unitPrice: Number(e.unit_cost) || 0,
+    lineCost: (Number(e.quantity) || 0) * (Number(e.unit_cost) || 0),
+  }));
+  const labor = (recipe?.labor_entries || []).map((e: any) => {
+    const monthlyMinutes = (Number(e.monthly_hours) || 0) * 60;
+    const costPerMinute = monthlyMinutes > 0 ? (Number(e.monthly_salary) || 0) / monthlyMinutes : 0;
+    return {
+      employeeId: e.id,
+      role: e.role || 'Funcionário',
+      minutes: Number(e.minutes) || 0,
+      costPerMinute,
+      lineCost: (Number(e.minutes) || 0) * costPerMinute,
+    };
+  });
+  const equipment = (recipe?.equipment_entries || []).map((e: any) => ({
+    equipmentId: e.id,
+    name: e.name || 'Equipamento',
+    hoursUsed: Number(e.hours_used) || 0,
+    lineCost: (Number(e.hours_used) || 0) * (Number(e.consumption_per_hour) || 0) * (Number(e.utility_rate) || 0),
+  }));
+
+  const totalPackagingCost = packaging.reduce((sum: number, i: any) => sum + i.lineCost, 0);
+  const totalLaborCost = labor.reduce((sum: number, i: any) => sum + i.lineCost, 0);
+  const totalEquipmentCost = equipment.reduce((sum: number, i: any) => sum + i.lineCost, 0);
+  const totalBatchCost = totalIngredientsCost + totalPackagingCost + totalLaborCost + totalEquipmentCost;
+
   return {
     recipeId,
     recipeVersionId: versionId,
     yieldQuantity,
     ingredients,
-    packaging: [],
-    labor: [],
-    equipment: [],
+    packaging,
+    labor,
+    equipment,
     totalIngredientsCost,
-    totalPackagingCost: 0,
-    totalLaborCost: 0,
-    totalEquipmentCost: 0,
-    totalBatchCost: totalIngredientsCost,
-    unitCost: yieldQuantity > 0 ? totalIngredientsCost / yieldQuantity : totalIngredientsCost,
+    totalPackagingCost,
+    totalLaborCost,
+    totalEquipmentCost,
+    totalBatchCost,
+    unitCost: yieldQuantity > 0 ? totalBatchCost / yieldQuantity : totalBatchCost,
     currency: 'BRL',
   } as CostBreakdownDto;
 }
@@ -699,17 +749,91 @@ export async function deleteRecipeStep(
 }
 
 // =======================
-// Mão de Obra/Embalagens/Equipamentos (Fase Futura)
+// Mão de Obra / Embalagens / Equipamentos (custos do lote, arrays no doc da receita)
 // =======================
-export async function addRecipePackaging() { throw new Error('Embalagens não suportadas na versão atual'); }
-export async function updateRecipePackaging() { throw new Error('Embalagens não suportadas na versão atual'); }
-export async function deleteRecipePackaging() { throw new Error('Embalagens não suportadas na versão atual'); }
-export async function addRecipeLabor() { throw new Error('Mão de obra não suportada na versão atual'); }
-export async function updateRecipeLabor() { throw new Error('Mão de obra não suportada na versão atual'); }
-export async function deleteRecipeLabor() { throw new Error('Mão de obra não suportada na versão atual'); }
-export async function addRecipeEquipment() { throw new Error('Equipamentos não suportados na versão atual'); }
-export async function updateRecipeEquipment() { throw new Error('Equipamentos não suportados na versão atual'); }
-export async function deleteRecipeEquipment() { throw new Error('Equipamentos não suportados na versão atual'); }
+type RecipeEntryField = 'packaging_entries' | 'labor_entries' | 'equipment_entries';
+
+async function mutateRecipeEntries(
+  recipeId: string,
+  field: RecipeEntryField,
+  mutate: (entries: any[]) => any[],
+) {
+  const recipe = await api.recipes.getById(recipeId);
+  if (!recipe) throw new Error('Receita não encontrada');
+  const next = mutate([...(recipe[field] || [])]);
+  await api.recipes.update(recipeId, { [field]: next });
+  resetCache();
+  return { success: true };
+}
+
+const packagingEntry = (p: RecipePackagingPayload) => ({
+  name: p.name,
+  quantity: Number(p.quantity) || 0,
+  unit_cost: Number(p.unitCost) || 0,
+});
+const laborEntry = (p: RecipeLaborPayload) => ({
+  role: p.role,
+  minutes: Number(p.minutes) || 0,
+  monthly_salary: Number(p.monthlySalary) || 0,
+  monthly_hours: Number(p.monthlyHours) || 0,
+});
+const equipmentEntry = (p: RecipeEquipmentPayload) => ({
+  name: p.name,
+  type: p.type,
+  hours_used: Number(p.hoursUsed) || 0,
+  consumption_per_hour: Number(p.consumptionPerHour) || 0,
+  utility_rate: Number(p.utilityRate) || 0,
+});
+
+export async function addRecipePackaging(recipeId: string, _versionId: string, payload: RecipePackagingPayload) {
+  return mutateRecipeEntries(recipeId, 'packaging_entries', (entries) => [...entries, { id: uuidv4(), ...packagingEntry(payload) }]);
+}
+export async function updateRecipePackaging(recipeId: string, _versionId: string, entryId: string, payload: RecipePackagingPayload) {
+  return mutateRecipeEntries(recipeId, 'packaging_entries', (entries) =>
+    entries.map((e) => (e.id === entryId ? { ...e, ...packagingEntry(payload) } : e)));
+}
+export async function deleteRecipePackaging(recipeId: string, _versionId: string, entryId: string) {
+  return mutateRecipeEntries(recipeId, 'packaging_entries', (entries) => entries.filter((e) => e.id !== entryId));
+}
+export async function addRecipeLabor(recipeId: string, _versionId: string, payload: RecipeLaborPayload) {
+  return mutateRecipeEntries(recipeId, 'labor_entries', (entries) => [...entries, { id: uuidv4(), ...laborEntry(payload) }]);
+}
+export async function updateRecipeLabor(recipeId: string, _versionId: string, entryId: string, payload: RecipeLaborPayload) {
+  return mutateRecipeEntries(recipeId, 'labor_entries', (entries) =>
+    entries.map((e) => (e.id === entryId ? { ...e, ...laborEntry(payload) } : e)));
+}
+export async function deleteRecipeLabor(recipeId: string, _versionId: string, entryId: string) {
+  return mutateRecipeEntries(recipeId, 'labor_entries', (entries) => entries.filter((e) => e.id !== entryId));
+}
+export async function addRecipeEquipment(recipeId: string, _versionId: string, payload: RecipeEquipmentPayload) {
+  return mutateRecipeEntries(recipeId, 'equipment_entries', (entries) => [...entries, { id: uuidv4(), ...equipmentEntry(payload) }]);
+}
+export async function updateRecipeEquipment(recipeId: string, _versionId: string, entryId: string, payload: RecipeEquipmentPayload) {
+  return mutateRecipeEntries(recipeId, 'equipment_entries', (entries) =>
+    entries.map((e) => (e.id === entryId ? { ...e, ...equipmentEntry(payload) } : e)));
+}
+export async function deleteRecipeEquipment(recipeId: string, _versionId: string, entryId: string) {
+  return mutateRecipeEntries(recipeId, 'equipment_entries', (entries) => entries.filter((e) => e.id !== entryId));
+}
+
+/**
+ * Custos adicionais do lote a partir dos arrays da receita:
+ * embalagens (qtd*custo), mão de obra (min * salário/(horas*60)) e
+ * equipamentos (horas * consumo/h * tarifa).
+ */
+function computeEntryCosts(recipe: any) {
+  const packaging = (recipe?.packaging_entries || []).reduce(
+    (sum: number, e: any) => sum + (Number(e.quantity) || 0) * (Number(e.unit_cost) || 0), 0);
+  const labor = (recipe?.labor_entries || []).reduce((sum: number, e: any) => {
+    const monthlyMinutes = (Number(e.monthly_hours) || 0) * 60;
+    const perMinute = monthlyMinutes > 0 ? (Number(e.monthly_salary) || 0) / monthlyMinutes : 0;
+    return sum + (Number(e.minutes) || 0) * perMinute;
+  }, 0);
+  const equipment = (recipe?.equipment_entries || []).reduce(
+    (sum: number, e: any) =>
+      sum + (Number(e.hours_used) || 0) * (Number(e.consumption_per_hour) || 0) * (Number(e.utility_rate) || 0), 0);
+  return { packaging, labor, equipment, extras: packaging + labor + equipment };
+}
 
 // =======================
 // Precificação: produtos reais (receitas) para o workbook
@@ -746,9 +870,15 @@ export async function listWorkbookProducts(
   const totalFeesFraction = (cardFee + deliveryFee + commission + tax + operational) / 100;
 
   return recipes.map((recipe, index): WorkbookProductRowDto => {
-    const { totalCost } = calculateCost(recipe.ingredients);
+    const { totalCost: ingredientsBatchCost } = calculateCost(recipe.ingredients);
+    const entryCosts = computeEntryCosts(recipe);
     const yieldQuantity = Number(recipe.yield_quantity) || 1;
-    const unitCost = yieldQuantity > 0 ? totalCost / yieldQuantity : totalCost;
+    const perUnit = (batchValue: number) => (yieldQuantity > 0 ? batchValue / yieldQuantity : batchValue);
+    const ingredientUnitCost = perUnit(ingredientsBatchCost);
+    const laborUnitCost = perUnit(entryCosts.labor);
+    const packagingUnitCost = perUnit(entryCosts.packaging);
+    const equipmentUnitCost = perUnit(entryCosts.equipment);
+    const unitCost = ingredientUnitCost + laborUnitCost + packagingUnitCost + equipmentUnitCost;
 
     const product = cachedProductsMap.get(recipe.finished_product_id);
     const salePrice = product ? Number(product.price || 0) : 0;
@@ -784,10 +914,10 @@ export async function listWorkbookProducts(
       servingSize: null,
       pricingUnit: unit,
       pricingUnitFactor: 1,
-      laborCost: 0,
-      ingredientCost: unitCost,
-      packagingCost: 0,
-      equipmentCost: 0,
+      laborCost: laborUnitCost,
+      ingredientCost: ingredientUnitCost,
+      packagingCost: packagingUnitCost,
+      equipmentCost: equipmentUnitCost,
       cardFee,
       deliveryCost: deliveryFee,
       taxCost: tax,

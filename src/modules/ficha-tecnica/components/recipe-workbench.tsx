@@ -1571,20 +1571,155 @@ export function RecipeWorkbench({
                 ) : null}
 
                 {currentVersion && productStage === 'embalagens' ? (
-                  <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
-                    <p className="text-sm font-medium text-slate-500">O módulo de embalagens estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
+                  <div className="space-y-4">
+                    <PackagingForm
+                      form={packagingForm}
+                      onChange={(updates) => setPackagingForm((current) => ({ ...current, ...updates }))}
+                      onSubmit={() => void handlePackagingSubmit()}
+                      onCancel={() => {
+                        setPackagingForm(emptyPackagingForm);
+                        setPackagingEditingId(null);
+                      }}
+                      isEditing={Boolean(packagingEditingId)}
+                      isEditable={isEditableVersion}
+                      loading={loading}
+                    />
+                    <RecipeTable
+                      columns={['Nome', 'Qtd.', 'Custo', 'Ações']}
+                      rows={currentVersion.packagings.map((row) => [
+                        row.name,
+                        Number(row.quantity).toLocaleString('pt-BR'),
+                        formatBRL(Number(row.unitCost)),
+                        <div key={row.id} className="flex flex-wrap gap-2">
+                          <ActionButton
+                            tone="secondary"
+                            className="px-3 py-2 text-xs"
+                            onClick={() => {
+                              setPackagingEditingId(row.id);
+                              setPackagingForm({
+                                name: row.name,
+                                quantity: Number(row.quantity),
+                                unitCost: Number(row.unitCost),
+                              });
+                            }}
+                          >
+                            Editar
+                          </ActionButton>
+                          <ActionButton
+                            tone="danger"
+                            className="px-3 py-2 text-xs"
+                            onClick={() => void handleDelete('packaging', row.id)}
+                            disabled={!isEditableVersion || loading}
+                          >
+                            Excluir
+                          </ActionButton>
+                        </div>,
+                      ])}
+                    />
                   </div>
                 ) : null}
 
                 {currentVersion && productStage === 'mao-de-obra' ? (
-                  <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
-                    <p className="text-sm font-medium text-slate-500">O módulo de mão de obra estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
+                  <div className="space-y-4">
+                    <LaborForm
+                      form={laborForm}
+                      onChange={(updates) => setLaborForm((current) => ({ ...current, ...updates }))}
+                      onSubmit={() => void handleLaborSubmit()}
+                      onCancel={() => {
+                        setLaborForm(emptyLaborForm);
+                        setLaborEditingId(null);
+                      }}
+                      isEditing={Boolean(laborEditingId)}
+                      isEditable={isEditableVersion}
+                      loading={loading}
+                    />
+                    <RecipeTable
+                      columns={['Função', 'Min.', 'Salário', 'Ações']}
+                      rows={currentVersion.laborEntries.map((row) => [
+                        row.role,
+                        row.minutes,
+                        formatBRL(Number(row.monthlySalary)),
+                        <div key={row.id} className="flex flex-wrap gap-2">
+                          <ActionButton
+                            tone="secondary"
+                            className="px-3 py-2 text-xs"
+                            onClick={() => {
+                              setLaborEditingId(row.id);
+                              setLaborForm({
+                                role: row.role,
+                                minutes: row.minutes,
+                                monthlySalary: Number(row.monthlySalary),
+                                monthlyHours: row.monthlyHours,
+                              });
+                            }}
+                          >
+                            Editar
+                          </ActionButton>
+                          <ActionButton
+                            tone="danger"
+                            className="px-3 py-2 text-xs"
+                            onClick={() => void handleDelete('labor', row.id)}
+                            disabled={!isEditableVersion || loading}
+                          >
+                            Excluir
+                          </ActionButton>
+                        </div>,
+                      ])}
+                    />
                   </div>
                 ) : null}
 
                 {currentVersion && productStage === 'equipamentos' ? (
-                  <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
-                    <p className="text-sm font-medium text-slate-500">O módulo de equipamentos estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
+                  <div className="space-y-4">
+                    <EquipmentForm
+                      form={equipmentForm}
+                      onChange={(updates) => setEquipmentForm((current) => ({ ...current, ...updates }))}
+                      onSubmit={() => void handleEquipmentSubmit()}
+                      onCancel={() => {
+                        setEquipmentForm(emptyEquipmentForm);
+                        setEquipmentEditingId(null);
+                      }}
+                      isEditing={Boolean(equipmentEditingId)}
+                      isEditable={isEditableVersion}
+                      loading={loading}
+                      hoursLabel="Horas de uso"
+                      consumptionLabel="Consumo por hora"
+                      utilityRateLabel="Tarifa utilidade"
+                    />
+                    <RecipeTable
+                      columns={['Equipamento', 'Tipo', 'Horas', 'Ações']}
+                      rows={currentVersion.equipmentEntries.map((row) => [
+                        row.name,
+                        row.type,
+                        Number(row.hoursUsed).toLocaleString('pt-BR'),
+                        <div key={row.id} className="flex flex-wrap gap-2">
+                          <ActionButton
+                            tone="secondary"
+                            className="px-3 py-2 text-xs"
+                            onClick={() => {
+                              setEquipmentEditingId(row.id);
+                              setEquipmentForm({
+                                name: row.name,
+                                type: row.type,
+                                hoursUsed: Number(row.hoursUsed),
+                                consumptionPerHour: Number(row.consumptionPerHour),
+                                utilityRate: Number(row.utilityRate),
+                              });
+                            }}
+                          >
+                            Editar
+                          </ActionButton>
+                          <ActionButton
+                            tone="danger"
+                            className="px-3 py-2 text-xs"
+                            onClick={() => void handleDelete('equipment', row.id)}
+                            disabled={!isEditableVersion || loading}
+                          >
+                            Excluir
+                          </ActionButton>
+                        </div>,
+                      ])}
+                    />
                   </div>
                 ) : null}
               </div>
@@ -2241,24 +2376,159 @@ export function RecipeWorkbench({
 
             {currentVersion && activeCompoundStage === 'embalagens' ? (
               <EditorCard title="6. Embalagens">
-                <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
-                  <p className="text-sm font-medium text-slate-500">O módulo de embalagens estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
+                <div className="space-y-4">
+                  <PackagingForm
+                    form={packagingForm}
+                    onChange={(updates) => setPackagingForm((current) => ({ ...current, ...updates }))}
+                    onSubmit={() => void handlePackagingSubmit()}
+                    onCancel={() => {
+                      setPackagingForm(emptyPackagingForm);
+                      setPackagingEditingId(null);
+                    }}
+                    isEditing={Boolean(packagingEditingId)}
+                    isEditable={isEditableVersion}
+                    loading={loading}
+                  />
+                  <RecipeTable
+                    columns={['Nome', 'Qtd.', 'Custo', 'Ações']}
+                    rows={currentVersion.packagings.map((row) => [
+                      row.name,
+                      Number(row.quantity).toLocaleString('pt-BR'),
+                      formatBRL(Number(row.unitCost)),
+                      <div key={row.id} className="flex flex-wrap gap-2">
+                        <ActionButton
+                          tone="secondary"
+                          className="px-3 py-2 text-xs"
+                          onClick={() => {
+                            setPackagingEditingId(row.id);
+                            setPackagingForm({
+                              name: row.name,
+                              quantity: Number(row.quantity),
+                              unitCost: Number(row.unitCost),
+                            });
+                          }}
+                        >
+                          Editar
+                        </ActionButton>
+                        <ActionButton
+                          tone="danger"
+                          className="px-3 py-2 text-xs"
+                          onClick={() => void handleDelete('packaging', row.id)}
+                          disabled={!isEditableVersion || loading}
+                        >
+                          Excluir
+                        </ActionButton>
+                      </div>,
+                    ])}
+                  />
                 </div>
               </EditorCard>
             ) : null}
 
             {currentVersion && activeCompoundStage === 'mao-de-obra' ? (
               <EditorCard title="7. Mão de obra">
-                <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
-                  <p className="text-sm font-medium text-slate-500">O módulo de mão de obra estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
+                <div className="space-y-4">
+                  <LaborForm
+                    form={laborForm}
+                    onChange={(updates) => setLaborForm((current) => ({ ...current, ...updates }))}
+                    onSubmit={() => void handleLaborSubmit()}
+                    onCancel={() => {
+                      setLaborForm(emptyLaborForm);
+                      setLaborEditingId(null);
+                    }}
+                    isEditing={Boolean(laborEditingId)}
+                    isEditable={isEditableVersion}
+                    loading={loading}
+                  />
+                  <RecipeTable
+                    columns={['Função', 'Min.', 'Salário', 'Ações']}
+                    rows={currentVersion.laborEntries.map((row) => [
+                      row.role,
+                      row.minutes,
+                      formatBRL(Number(row.monthlySalary)),
+                      <div key={row.id} className="flex flex-wrap gap-2">
+                        <ActionButton
+                          tone="secondary"
+                          className="px-3 py-2 text-xs"
+                          onClick={() => {
+                            setLaborEditingId(row.id);
+                            setLaborForm({
+                              role: row.role,
+                              minutes: row.minutes,
+                              monthlySalary: Number(row.monthlySalary),
+                              monthlyHours: row.monthlyHours,
+                            });
+                          }}
+                        >
+                          Editar
+                        </ActionButton>
+                        <ActionButton
+                          tone="danger"
+                          className="px-3 py-2 text-xs"
+                          onClick={() => void handleDelete('labor', row.id)}
+                          disabled={!isEditableVersion || loading}
+                        >
+                          Excluir
+                        </ActionButton>
+                      </div>,
+                    ])}
+                  />
                 </div>
               </EditorCard>
             ) : null}
 
             {currentVersion && activeCompoundStage === 'equipamentos' ? (
               <EditorCard title="8. Equipamentos">
-                <div className="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-8 text-center">
-                  <p className="text-sm font-medium text-slate-500">O módulo de equipamentos estará disponível em uma fase futura. Os dados aqui não serão salvos.</p>
+                <div className="space-y-4">
+                  <EquipmentForm
+                    form={equipmentForm}
+                    onChange={(updates) => setEquipmentForm((current) => ({ ...current, ...updates }))}
+                    onSubmit={() => void handleEquipmentSubmit()}
+                    onCancel={() => {
+                      setEquipmentForm(emptyEquipmentForm);
+                      setEquipmentEditingId(null);
+                    }}
+                    isEditing={Boolean(equipmentEditingId)}
+                    isEditable={isEditableVersion}
+                    loading={loading}
+                    hoursLabel="Horas de uso"
+                    consumptionLabel="Consumo por hora"
+                    utilityRateLabel="Tarifa utilidade"
+                  />
+                  <RecipeTable
+                    columns={['Equipamento', 'Tipo', 'Horas', 'Ações']}
+                    rows={currentVersion.equipmentEntries.map((row) => [
+                      row.name,
+                      row.type,
+                      Number(row.hoursUsed).toLocaleString('pt-BR'),
+                      <div key={row.id} className="flex flex-wrap gap-2">
+                        <ActionButton
+                          tone="secondary"
+                          className="px-3 py-2 text-xs"
+                          onClick={() => {
+                            setEquipmentEditingId(row.id);
+                            setEquipmentForm({
+                              name: row.name,
+                              type: row.type,
+                              hoursUsed: Number(row.hoursUsed),
+                              consumptionPerHour: Number(row.consumptionPerHour),
+                              utilityRate: Number(row.utilityRate),
+                            });
+                          }}
+                        >
+                          Editar
+                        </ActionButton>
+                        <ActionButton
+                          tone="danger"
+                          className="px-3 py-2 text-xs"
+                          onClick={() => void handleDelete('equipment', row.id)}
+                          disabled={!isEditableVersion || loading}
+                        >
+                          Excluir
+                        </ActionButton>
+                      </div>,
+                    ])}
+                  />
                 </div>
               </EditorCard>
             ) : null}

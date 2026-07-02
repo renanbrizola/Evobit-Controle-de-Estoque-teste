@@ -234,7 +234,7 @@ export const categorySchema = {
 // RECEITAS / FICHA TÉCNICA (Capa + Ingredientes)
 export const recipeSchema = {
     title: 'recipe schema',
-    version: 4, // Bumped for discount_from_stock and auto_production (v3) -> added ingredient id (v4)
+    version: 5, // v4: ingredient id -> v5: packaging/labor/equipment entries (custo do lote)
     primaryKey: 'id',
     type: 'object',
     properties: {
@@ -259,6 +259,46 @@ export const recipeSchema = {
                     discount_from_stock: { type: 'boolean' }
                 },
                 required: ['id', 'input_product_id', 'quantity']
+            }
+        },
+        // Custos adicionais do lote (etapas Embalagens / Mão de obra / Equipamentos)
+        packaging_entries: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string' },
+                    name: { type: 'string' },
+                    quantity: { type: 'number' },
+                    unit_cost: { type: 'number' }
+                }
+            }
+        },
+        labor_entries: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string' },
+                    role: { type: 'string' },
+                    minutes: { type: 'number' },
+                    monthly_salary: { type: 'number' },
+                    monthly_hours: { type: 'number' }
+                }
+            }
+        },
+        equipment_entries: {
+            type: 'array',
+            items: {
+                type: 'object',
+                properties: {
+                    id: { type: 'string' },
+                    name: { type: 'string' },
+                    type: { type: 'string' },
+                    hours_used: { type: 'number' },
+                    consumption_per_hour: { type: 'number' },
+                    utility_rate: { type: 'number' }
+                }
             }
         },
         user_id: { type: 'string' },

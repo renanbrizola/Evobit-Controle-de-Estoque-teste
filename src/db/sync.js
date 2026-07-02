@@ -6,7 +6,11 @@ import { ensureSupabaseSession } from '../services/authHelper';
  * PostgreSQL table. These must be stripped before pushing.
  */
 const EXCLUDED_FIELDS_BY_TABLE = {
-    recipes: ['ingredients'], // Embedded array in RxDB, stored relationally or doesn't exist in PG
+    // ingredients: embedded no RxDB, relacional no PG (vai via RPC p_ingredients).
+    // *_entries: custos do lote (embalagens/mao de obra/equipamentos) ainda so
+    // locais — as colunas nao existem no Supabase (adicionar quando o sync de
+    // receitas ganhar suporte na nuvem).
+    recipes: ['ingredients', 'packaging_entries', 'labor_entries', 'equipment_entries'],
 };
 
 const ALLOWED_FIELDS_BY_TABLE = {
