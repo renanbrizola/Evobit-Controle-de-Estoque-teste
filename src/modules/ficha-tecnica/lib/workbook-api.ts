@@ -270,12 +270,51 @@ function buildMockProductDetail(code: string): WorkbookProductDetailDto | null {
   };
 }
 
+function emptySummary(): WorkbookSnapshotDto['summary'] {
+  return {
+    totalRecipes: 0,
+    totalInventoryItems: 0,
+    totalPricedProducts: 0,
+    activePrices: 0,
+    averageSuggestedPrice: 0,
+    averageContributionMargin: 0,
+    averageCmvPercent: 0,
+  };
+}
+
+/** Resumo do Dashboard derivado dos dados reais (insumos + receitas). */
+function buildRealSummary(
+  inputs: WorkbookSnapshotDto['inputs'],
+  products: WorkbookSnapshotDto['products'],
+): WorkbookSnapshotDto['summary'] {
+  const finals = products.filter((p) => p.productType === 'FINAL');
+  const numbers = (values: Array<number | null | undefined>) =>
+    values.filter((v): v is number => typeof v === 'number');
+  return {
+    totalRecipes: finals.length,
+    totalInventoryItems: inputs.length,
+    totalPricedProducts: finals.filter((p) => p.suggestedPrice !== null).length,
+    activePrices: finals.filter((p) => p.salePrice !== null && Number(p.salePrice) > 0).length,
+    averageSuggestedPrice: average(numbers(finals.map((p) => p.suggestedPrice))),
+    averageContributionMargin: average(numbers(finals.map((p) => p.contributionMargin))),
+    averageCmvPercent: average(numbers(finals.map((p) => p.cmvPercent))),
+  };
+}
+
 export function useWorkbookSnapshot(isDemoSession: boolean) {
   const [data, setData] = useState<WorkbookSnapshotDto>(() =>
     // Sessao real: comeca SEM insumos/produtos mock (agua/farinha, "Pao de queijo"...).
     // Eles vinham do buildMockSnapshot e piscavam na tela antes dos dados reais
     // carregarem (emptyWorkbookSections limpa as secoes, mas nao inputs/products).
-    isDemoSession ? buildMockSnapshot() : { ...buildMockSnapshot(), ...emptyWorkbookSections(), inputs: [], products: [] }
+    isDemoSession
+      ? buildMockSnapshot()
+      : {
+          ...buildMockSnapshot(),
+          ...emptyWorkbookSections(),
+          inputs: [],
+          products: [],
+          summary: emptySummary(),
+        }
   );
   const [loading, setLoading] = useState(!isDemoSession);
   const [source, setSource] = useState<'demo' | 'api'>(isDemoSession ? 'demo' : 'api');
@@ -324,12 +363,19 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
       }
 
       if (!active) return;
-      setData((prev) => ({
-        ...prev,
-        ...(inputs ? { inputs } : {}),
-        ...(products ? { products } : {}),
-        ...(sections ?? {}),
-      }));
+      setData((prev) => {
+        const nextInputs = inputs ?? prev.inputs;
+        const nextProducts = products ?? prev.products;
+        return {
+          ...prev,
+          ...(inputs ? { inputs } : {}),
+          ...(products ? { products } : {}),
+          ...(sections ?? {}),
+          // Resumo (Dashboard) derivado dos dados REAIS — só fichas finais
+          // (compostos são insumos), mesma convenção da Precificação.
+          summary: buildRealSummary(nextInputs, nextProducts),
+        };
+      });
       setSource('api');
       setLoading(false);
     })();
