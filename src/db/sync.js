@@ -65,7 +65,28 @@ const sanitizeForSupabase = (data, tableName) => {
         }
     });
 
+    // 3. movements: espelha quantity na coluna legada qty (nullable pós-migration)
+    if (tableName === 'movements' && sanitized.quantity != null && sanitized.qty == null) {
+        sanitized.qty = sanitized.quantity;
+    }
+
     return sanitized;
+};
+
+/**
+ * Keep only fields the RxDB collection schema knows. The Supabase tables have
+ * extra/legacy columns (e.g. movements.qty, created_at on tables whose RxDB
+ * schema lacks it) that would otherwise be written into local docs on pull.
+ */
+const sanitizeForRxDB = (row, collection) => {
+    const schemaProps = collection.schema.jsonSchema.properties;
+    const clean = {};
+    for (const key of Object.keys(row)) {
+        if (schemaProps[key] !== undefined) {
+            clean[key] = row[key];
+        }
+    }
+    return clean;
 };
 
 // Sync stats tracker
@@ -139,7 +160,7 @@ export const syncCollection = async (collection, tableName) => {
                             const localTs = localDoc.get(timestampField);
                             if (localTs && remote[timestampField] <= localTs) continue;
                         }
-                        toUpsert.push(remote);
+                        toUpsert.push(sanitizeForRxDB(remote, collection));
                     }
                     if (toUpsert.length > 0) {
                         await collection.bulkUpsert(toUpsert);
