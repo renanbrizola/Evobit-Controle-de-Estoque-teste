@@ -773,7 +773,9 @@ export async function listWorkbookProducts(
       code: (product?.sku && String(product.sku).trim()) || `P${String(index + 1).padStart(2, '0')}`,
       recipeId: recipe.id,
       recipeName: recipe.name || 'Sem nome',
-      productType: 'FINAL',
+      // Mesma convencao do getRecipes: produto is_raw_material = insumo composto
+      // (SUB_RECEITA). A Precificacao filtra FINAL, entao compostos ficam fora.
+      productType: product?.is_raw_material === true ? 'SUB_RECEITA' : 'FINAL',
       recipeVersionId: `${recipe.id}-v1`,
       versionNumber: 1,
       versionStatus: salePrice > 0 ? 'APPROVED' : 'DRAFT',
