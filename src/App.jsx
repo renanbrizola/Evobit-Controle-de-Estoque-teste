@@ -52,6 +52,7 @@ import TechnicalSheetExpenses from './pages/TechnicalSheet/Expenses';
 import TechnicalSheetPricing from './pages/TechnicalSheet/Pricing';
 import TechnicalSheetStaff from './pages/TechnicalSheet/Staff';
 import TechnicalSheetProductDetail from './pages/TechnicalSheet/ProductDetail';
+import TechnicalSheetSettings from './pages/TechnicalSheet/Settings';
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
@@ -182,6 +183,7 @@ function App() {
                             <Route path="despesas" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetExpenses /></SectionErrorBoundary>} />
                             <Route path="precificacao" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetPricing /></SectionErrorBoundary>} />
                             <Route path="funcionarios" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetStaff /></SectionErrorBoundary>} />
+                            <Route path="configuracoes" element={<SectionErrorBoundary section="technical_sheet"><TechnicalSheetSettings /></SectionErrorBoundary>} />
                           </Route>
                         </Route>
 

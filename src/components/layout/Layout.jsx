@@ -115,6 +115,7 @@ const Layout = () => {
         { path: '/app/ficha-tecnica/precificacao', label: 'Precificação', icon: Tag, module: 'technical_sheet' },
         // Administração
         { path: '/app/ficha-tecnica/funcionarios', label: 'Funcionários', icon: Users, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/configuracoes', label: 'Configurações da Ficha', icon: Settings, module: 'technical_sheet' },
 
         // --- VENDAS ---
         { path: '/app/dashboard-vendas', label: 'Dashboard', icon: BarChart3, module: 'sales' },

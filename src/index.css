@@ -101,8 +101,28 @@
     --text-strong: #1b2329;
     --text-muted: #6a7781;
     --text-soft: #99a3aa;
+    --brand-primary-900: #183f45;
+    --brand-primary-700: #23565d;
+    --brand-primary-600: #2c676e;
+    --brand-primary-100: #dcebec;
+    --brand-accent-800: #8c5425;
+    --brand-accent-700: #a66731;
+    --brand-accent-600: #b87942;
+    --brand-accent-100: #f0e1d3;
+    --state-success-700: #2f7448;
+    --state-success-100: #ddeddd;
+    --state-warning-700: #9a661d;
+    --state-warning-100: #f3e7cf;
+    --state-danger-700: #aa453e;
+    --state-danger-100: #f3ddda;
+    --state-info-700: #2f657a;
+    --state-info-100: #ddeaf0;
+    --state-demo-700: #6c5a35;
+    --state-demo-100: #efe6d5;
     --radius-panel: 12px;
     --radius-control: 10px;
+    --shadow-panel: 0 1px 0 rgba(27, 35, 41, 0.06), 0 8px 24px rgba(27, 35, 41, 0.04);
+    --shadow-overlay: 0 24px 64px rgba(27, 35, 41, 0.18);
 
     /* Mapeamento de Tokens Antigos do Evobit -> Nova Paleta Mineral/Cobre */
     /* Dark Theme Default */

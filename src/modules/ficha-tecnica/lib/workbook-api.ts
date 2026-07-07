@@ -301,21 +301,27 @@ function buildRealSummary(
   };
 }
 
+// Último snapshot real carregado nesta sessão do app. Navegar entre as telas
+// do módulo pinta imediatamente com o último estado conhecido, em vez de uma
+// tela vazia enquanto tudo refaz o fetch do zero.
+let lastRealSnapshot: WorkbookSnapshotDto | null = null;
+
 export function useWorkbookSnapshot(isDemoSession: boolean) {
-  const [data, setData] = useState<WorkbookSnapshotDto>(() =>
-    // Sessao real: comeca SEM insumos/produtos mock (agua/farinha, "Pao de queijo"...).
-    // Eles vinham do buildMockSnapshot e piscavam na tela antes dos dados reais
-    // carregarem (emptyWorkbookSections limpa as secoes, mas nao inputs/products).
-    isDemoSession
-      ? buildMockSnapshot()
-      : {
-          ...buildMockSnapshot(),
-          ...emptyWorkbookSections(),
-          inputs: [],
-          products: [],
-          summary: emptySummary(),
-        }
-  );
+  const [data, setData] = useState<WorkbookSnapshotDto>(() => {
+    if (isDemoSession) return buildMockSnapshot();
+    // Sessao real: comeca do cache da sessão (se houver) ou SEM insumos/produtos
+    // mock (agua/farinha, "Pao de queijo"...). Eles vinham do buildMockSnapshot e
+    // piscavam na tela antes dos dados reais carregarem.
+    return (
+      lastRealSnapshot ?? {
+        ...buildMockSnapshot(),
+        ...emptyWorkbookSections(),
+        inputs: [],
+        products: [],
+        summary: emptySummary(),
+      }
+    );
+  });
   const [loading, setLoading] = useState(!isDemoSession);
   const [source, setSource] = useState<'demo' | 'api'>(isDemoSession ? 'demo' : 'api');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -337,53 +343,90 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
 
     setLoading(true);
 
-    (async () => {
-      // Mescla no estado ANTERIOR: o que falhar (transitório) NÃO sobrescreve com
-      // mock — evita o "às vezes aparece o cadastro antigo". O erro real é logado.
-      let inputs: WorkbookSnapshotDto['inputs'] | undefined;
-      let products: WorkbookSnapshotDto['products'] | undefined;
-      let sections: Partial<WorkbookSnapshotDto> | undefined;
-
-      try {
-        inputs = await listWorkbookInputs();
-      } catch (err) {
-        console.error('[workbook] falha ao carregar insumos reais:', err);
-      }
-
-      try {
-        products = await listWorkbookProducts();
-      } catch (err) {
-        console.error('[workbook] falha ao carregar produtos reais:', err);
-      }
-
-      try {
-        sections = await fetchWorkbookSections();
-      } catch (err) {
-        console.error('[workbook] falha ao carregar seções do workbook (Supabase):', err);
-      }
-
+    // Mescla no estado ANTERIOR conforme cada fonte resolve: os dados locais
+    // (RxDB) aparecem imediatamente, sem esperar a rede (Supabase). O que
+    // falhar (transitório) NÃO sobrescreve — o erro real é logado.
+    const apply = (patch: Partial<WorkbookSnapshotDto>) => {
       if (!active) return;
       setData((prev) => {
-        const nextInputs = inputs ?? prev.inputs;
-        const nextProducts = products ?? prev.products;
-        return {
-          ...prev,
-          ...(inputs ? { inputs } : {}),
-          ...(products ? { products } : {}),
-          ...(sections ?? {}),
-          // Resumo (Dashboard) derivado dos dados REAIS — só fichas finais
-          // (compostos são insumos), mesma convenção da Precificação.
-          summary: buildRealSummary(nextInputs, nextProducts),
-        };
+        const next = { ...prev, ...patch };
+        // Resumo (Dashboard) derivado dos dados REAIS — só fichas finais
+        // (compostos são insumos), mesma convenção da Precificação.
+        next.summary = buildRealSummary(next.inputs, next.products);
+        lastRealSnapshot = next;
+        return next;
       });
+    };
+
+    const inputsPromise = listWorkbookInputs()
+      .then((inputs) => apply({ inputs }))
+      .catch((err) => console.error('[workbook] falha ao carregar insumos reais:', err));
+
+    // Primeiro cálculo dos produtos usa o profile já conhecido (cache da sessão
+    // ou defaults); quando as configurações chegarem do Supabase, recalcula.
+    const initialProductsPromise = listWorkbookProducts(lastRealSnapshot?.profile ?? {})
+      .then((products) => apply({ products }))
+      .catch((err) => console.error('[workbook] falha ao carregar produtos reais:', err));
+
+    const sectionsPromise = fetchWorkbookSections()
+      .then((sections) => {
+        apply(sections);
+        // Preço sugerido depende de margem/taxas das configurações reais.
+        return initialProductsPromise
+          .then(() => listWorkbookProducts(sections.profile))
+          .then((products) => apply({ products }));
+      })
+      .catch((err) => console.error('[workbook] falha ao carregar seções do workbook (Supabase):', err));
+
+    Promise.allSettled([inputsPromise, initialProductsPromise, sectionsPromise]).then(() => {
+      if (!active) return;
       setSource('api');
       setLoading(false);
-    })();
+    });
 
     return () => {
       active = false;
     };
   }, [isDemoSession, refreshKey]);
+
+  // Reatividade local-first: quando o sync (inicial ou periódico) grava nas
+  // coleções do RxDB, recarrega o snapshot — sem isso a tela montada antes do
+  // pull terminar só mostrava os dados depois de um F5.
+  useEffect(() => {
+    if (isDemoSession) return;
+
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const subscriptions: Array<{ unsubscribe: () => void }> = [];
+
+    (async () => {
+      try {
+        const { getDatabase } = await import('../../../db/database');
+        const db = await getDatabase();
+        if (cancelled || !db) return;
+
+        const scheduleReload = () => {
+          clearTimeout(timer);
+          timer = setTimeout(() => reload(), 500);
+        };
+
+        for (const name of ['products', 'recipes', 'providers']) {
+          const collection = (db as Record<string, any>)[name];
+          if (collection?.$?.subscribe) {
+            subscriptions.push(collection.$.subscribe(scheduleReload));
+          }
+        }
+      } catch (err) {
+        console.error('[workbook] falha ao observar mudanças do banco local:', err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+      subscriptions.forEach((subscription) => subscription.unsubscribe());
+    };
+  }, [isDemoSession, reload]);
 
   return { data, loading, source, reload };
 }
