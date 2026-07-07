@@ -42,8 +42,6 @@ type IngredientRow = RecipeVersionDetail['ingredients'][0];
 type LaborRow = RecipeVersionDetail['laborEntries'][0];
 type StaffRow = ReturnType<typeof useWorkbookSnapshot>['data']['staff'][number];
 
-const COMPOSITE_PREFIX = 'SUBRECIPE:';
-
 // ─── Step indicator ───────────────────────────────────────────────────────────
 
 function StepIndicator({ step }: { step: 1 | 2 | 3 | 4 }) {
@@ -138,8 +136,8 @@ function IngredientSearch({
 
   const mirroredIds = new Set(
     items
-      .filter((item) => item.type === ItemType.COMPOSITE && item.code?.startsWith(COMPOSITE_PREFIX))
-      .map((item) => item.code!.slice(COMPOSITE_PREFIX.length))
+      .filter((item) => item.type === ItemType.COMPOSITE && item.recipeId)
+      .map((item) => item.recipeId!)
       .filter(Boolean),
   );
 
@@ -188,9 +186,7 @@ function IngredientSearch({
               <p className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-gray-400">Insumos</p>
               {items.map((item) => {
                 const mirroredId =
-                  item.type === ItemType.COMPOSITE && item.code?.startsWith(COMPOSITE_PREFIX)
-                    ? item.code.slice(COMPOSITE_PREFIX.length)
-                    : '';
+                  item.type === ItemType.COMPOSITE ? (item.recipeId || '') : '';
                 return (
                   <button
                     key={item.id}

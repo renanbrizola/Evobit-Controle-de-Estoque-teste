@@ -5,8 +5,6 @@ import {
   searchInventoryItems,
 } from '../lib/inventory-management-api';
 
-const COMPOSITE_RECIPE_CODE_PREFIX = 'SUBRECIPE:';
-
 export interface IngredientComboboxProps {
   value: string;
   onSelect: (value: string, uomId?: string) => void;
@@ -82,19 +80,9 @@ export function IngredientCombobox({
     () =>
       new Set(
         items
-          .map((item) => {
-            if (
-              item.type !== ItemType.COMPOSITE ||
-              !item.code?.startsWith(COMPOSITE_RECIPE_CODE_PREFIX)
-            ) {
-              return null;
-            }
-
-            const recipeId = item.code.slice(
-              COMPOSITE_RECIPE_CODE_PREFIX.length,
-            );
-            return recipeId || null;
-          })
+          .map((item) =>
+            item.type === ItemType.COMPOSITE ? item.recipeId || null : null,
+          )
           .filter((recipeId): recipeId is string => Boolean(recipeId)),
       ),
     [items],
@@ -167,9 +155,8 @@ export function IngredientCombobox({
                   onMouseDown={(e) => {
                     e.preventDefault();
                     const mirroredRecipeId =
-                      item.type === ItemType.COMPOSITE &&
-                      item.code?.startsWith(COMPOSITE_RECIPE_CODE_PREFIX)
-                        ? item.code.slice(COMPOSITE_RECIPE_CODE_PREFIX.length)
+                      item.type === ItemType.COMPOSITE
+                        ? item.recipeId || ''
                         : '';
                     onSelect(
                       mirroredRecipeId

@@ -31,6 +31,17 @@ const Modules = () => {
             textColor: 'text-blue-500'
         },
         {
+            key: 'technical_sheet',
+            name: 'Ficha Técnica',
+            description: 'Fichas técnicas, engenharia de cardápio e controle de fabricação.',
+            icon: ChefHat,
+            active: hasModule('technical_sheet'),
+            price: 97,
+            path: '/app/ficha-tecnica/dashboard',
+            color: 'bg-orange-500',
+            textColor: 'text-orange-500'
+        },
+        {
             key: 'purchases',
             name: 'Compras',
             description: 'Gestão de pedidos de compra e relacionamento com fornecedores.',
@@ -51,17 +62,6 @@ const Modules = () => {
             path: '/app/dashboard-vendas',
             color: 'bg-purple-500',
             textColor: 'text-purple-500'
-        },
-        {
-            key: 'technical_sheet',
-            name: 'Ficha Técnica',
-            description: 'Fichas técnicas, engenharia de cardápio e controle de fabricação.',
-            icon: ChefHat,
-            active: hasModule('technical_sheet'),
-            price: 97,
-            path: '/app/ficha-tecnica/dashboard',
-            color: 'bg-orange-500',
-            textColor: 'text-orange-500'
         },
         {
             key: 'finance',
@@ -265,15 +265,15 @@ const Modules = () => {
                         <div className="space-y-3">
                             <button
                                 onClick={handleBuyModule}
-                                className="w-full py-3.5 bg-brand-primary text-white rounded-xl font-bold hover:bg-brand-secondary transition-all shadow-lg shadow-brand-primary/20 hover:scale-[1.02]"
+                                className="btn-cta btn-cta--primary w-full"
                             >
-                                Confirmar Compra
+                                <span>Confirmar Compra</span>
                             </button>
                             <button
                                 onClick={() => setIsBuyModalOpen(false)}
-                                className="w-full py-3.5 text-gray-500 font-bold hover:bg-gray-50 rounded-xl transition-colors"
+                                className="btn-cta btn-cta--secondary w-full"
                             >
-                                Cancelar
+                                <span>Cancelar</span>
                             </button>
                         </div>
                     </div>

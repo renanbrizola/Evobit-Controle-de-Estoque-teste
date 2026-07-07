@@ -71,7 +71,6 @@ const ITEM_TYPE_LABELS: Record<string, string> = {
 };
 
 const AUTO_SUPPLIER_NAME = 'Fornecedor nao informado';
-const COMPOSITE_RECIPE_PREFIX = 'SUBRECIPE:';
 
 function parseLocaleNumber(value: string): number {
   const trimmed = value.trim();
@@ -445,9 +444,7 @@ export default function InputCatalogPage() {
                 ) : (
                   filtered.map((row) => {
                     const compositeRecipeId =
-                      row.type === ItemType.COMPOSITE && row.code?.startsWith(COMPOSITE_RECIPE_PREFIX)
-                        ? row.code.slice(COMPOSITE_RECIPE_PREFIX.length)
-                        : '';
+                      row.type === ItemType.COMPOSITE ? (row.recipeId || '') : '';
 
                     return (
                     <tr key={row.id} className="border-b border-gray-100 transition-colors last:border-0 hover:bg-gray-50/60">

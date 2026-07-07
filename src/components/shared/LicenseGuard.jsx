@@ -16,6 +16,10 @@ const LicenseGuard = ({ children }) => {
             if (result.active) {
                 setStatus(result.type);
                 setLicenseInfo(result);
+            } else if (result.reason === 'unauthenticated') {
+                // Sem sessão não é licença expirada: deixa passar para o
+                // ProtectedRoute redirecionar ao /login.
+                setStatus('unauthenticated');
             } else {
                 setStatus('expired');
             }

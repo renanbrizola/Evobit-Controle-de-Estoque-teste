@@ -97,28 +97,22 @@ export function CheckInput(props: InputHTMLAttributes<HTMLInputElement>) {
 export function ActionButton({
   tone = 'primary',
   className,
+  children,
   ...props
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   tone?: 'primary' | 'secondary' | 'danger';
 }) {
   const toneClassName = {
-    primary:
-      'border-[var(--brand-primary-700)] bg-[var(--brand-primary-700)] text-white hover:border-[var(--brand-primary-900)] hover:bg-[var(--brand-primary-900)] shadow-[var(--shadow-panel)]',
-    secondary:
-      'border-[var(--line-soft)] bg-[var(--bg-surface)] text-[var(--text-strong)] hover:border-[var(--line-strong)] hover:bg-[var(--bg-subtle)]',
-    danger:
-      'border-[var(--state-danger-700)] bg-[var(--state-danger-700)] text-white hover:brightness-95',
+    primary: 'btn-cta--primary',
+    secondary: 'btn-cta--secondary',
+    danger: 'btn-cta--danger',
   }[tone];
 
   return (
-    <button
-      {...props}
-      className={cn(
-        'inline-flex items-center justify-center rounded-[10px] border px-4 py-2.5 text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-50',
-        toneClassName,
-        className,
-      )}
-    />
+    <button {...props} className={cn('btn-cta text-sm', toneClassName, className)}>
+      {/* span contra-inclinado (ver .btn-cta no index.css) */}
+      <span className="inline-flex items-center justify-center gap-1.5">{children}</span>
+    </button>
   );
 }
 

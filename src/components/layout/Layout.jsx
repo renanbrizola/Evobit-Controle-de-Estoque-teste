@@ -175,7 +175,7 @@ const Layout = () => {
             <div className="border-b border-[var(--sidebar-line)] px-5 py-5">
                 <div className="rounded-[14px] border border-white/10 bg-white/5 p-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--color-secondary)] text-xs font-bold tracking-[0.18em] text-white shadow-[0_12px_24px_rgba(166,103,49,0.25)]">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-white/15 bg-white/10 text-xs font-bold tracking-[0.18em] text-[#C9A84C]">
                             EV
                         </div>
                         <div className="min-w-0">
@@ -378,15 +378,15 @@ const Layout = () => {
                 <div className="grid grid-cols-2 gap-4">
                     <button
                         onClick={() => setIsLogoutConfirmOpen(false)}
-                        className="py-3 px-4 rounded-[10px] font-bold transition-colors border text-gray-600 hover:bg-gray-50 border-gray-200"
+                        className="btn-cta btn-cta--secondary text-sm"
                     >
-                        {t('menu', 'cancel')}
+                        <span>{t('menu', 'cancel')}</span>
                     </button>
                     <button
                         onClick={confirmLogout}
-                        className="py-3 px-4 rounded-[10px] font-bold text-white bg-red-600 hover:bg-red-700 transition-all"
+                        className="btn-cta btn-cta--danger text-sm"
                     >
-                        {t('menu', 'confirmLogout')}
+                        <span>{t('menu', 'confirmLogout')}</span>
                     </button>
                 </div>
             </Modal>
@@ -406,18 +406,18 @@ const Layout = () => {
                 <div className="grid grid-cols-2 gap-4 relative z-10">
                     <button
                         onClick={() => setIsModuleConfirmOpen(false)}
-                        className="py-3 px-4 rounded-[10px] font-bold transition-colors border text-gray-600 hover:bg-gray-50 border-gray-200"
+                        className="btn-cta btn-cta--secondary text-sm"
                     >
-                        {t('menu', 'cancel')}
+                        <span>{t('menu', 'cancel')}</span>
                     </button>
                     <button
                         onClick={() => {
                             setIsModuleConfirmOpen(false);
                             navigate('/modules');
                         }}
-                        className="py-3 px-4 rounded-[10px] font-bold text-white bg-[var(--color-primary)] hover:opacity-90 transition-all"
+                        className="btn-cta btn-cta--primary text-sm"
                     >
-                        {t('menu', 'confirm')}
+                        <span>{t('menu', 'confirm')}</span>
                     </button>
                 </div>
             </Modal>

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSearchParams } from 'react-router-dom';
-import { X, Calculator } from 'lucide-react';
+import { X, Calculator, Search } from 'lucide-react';
 import { formatBRL } from '../../modules/ficha-tecnica/utils/index';
 import { ActionButton, Field, SelectInput, StatusMessage, TextInput } from '../../modules/ficha-tecnica/components/management-primitives';
 import { HighlightCard, SheetBlock } from '../../modules/ficha-tecnica/components/page-primitives';
@@ -177,6 +177,19 @@ export default function PricingPage() {
     () => data.products.filter(isRegisteredPricingProduct),
     [data.products],
   );
+  const [listSearch, setListSearch] = useState('');
+  const [listFilter, setListFilter] = useState<'TODOS' | 'COM_PRECO' | 'SEM_PRECO' | 'MARGEM_BAIXA'>('TODOS');
+  const filteredProducts = useMemo(() => {
+    const term = listSearch.trim().toLowerCase();
+    return visibleProducts.filter((row) => {
+      if (term && !`${row.recipeName} ${row.code}`.toLowerCase().includes(term)) return false;
+      const hasSalePrice = row.salePrice !== null && Number(row.salePrice) > 0;
+      if (listFilter === 'COM_PRECO') return hasSalePrice;
+      if (listFilter === 'SEM_PRECO') return !hasSalePrice;
+      if (listFilter === 'MARGEM_BAIXA') return typeof row.marginPercent === 'number' && row.marginPercent < 20;
+      return true;
+    });
+  }, [visibleProducts, listSearch, listFilter]);
   const pricingSummary = useMemo(() => {
     const averageOf = (values: number[]) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
     return {
@@ -369,6 +382,30 @@ export default function PricingPage() {
 
       {/* Main table */}
       <SheetBlock title="Visão geral de custos e preços">
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="relative flex-1 sm:max-w-xs">
+            <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+            <TextInput
+              value={listSearch}
+              onChange={(e) => setListSearch(e.target.value)}
+              placeholder="Buscar por produto ou código…"
+              className="pl-9"
+            />
+          </div>
+          <div className="sm:w-56">
+            <SelectInput value={listFilter} onChange={(e) => setListFilter(e.target.value as typeof listFilter)}>
+              <option value="TODOS">Todos os produtos</option>
+              <option value="COM_PRECO">Com preço de venda</option>
+              <option value="SEM_PRECO">Sem preço de venda</option>
+              <option value="MARGEM_BAIXA">Margem abaixo de 20%</option>
+            </SelectInput>
+          </div>
+          {listSearch || listFilter !== 'TODOS' ? (
+            <p className="text-xs text-gray-400">
+              {filteredProducts.length} de {visibleProducts.length} produto(s)
+            </p>
+          ) : null}
+        </div>
         <div className="overflow-x-auto rounded-xl border border-gray-200">
           <table className="min-w-[1200px] text-sm">
             <thead>
@@ -394,7 +431,14 @@ export default function PricingPage() {
               </tr>
             </thead>
             <tbody>
-              {visibleProducts.map((row) => {
+              {!filteredProducts.length ? (
+                <tr>
+                  <td colSpan={12} className="px-4 py-10 text-center text-sm text-gray-400">
+                    Nenhum produto encontrado com os filtros atuais.
+                  </td>
+                </tr>
+              ) : null}
+              {filteredProducts.map((row) => {
                 const rowPricingUnit = getDefaultPricingUnit(row);
                 return (
                 <tr

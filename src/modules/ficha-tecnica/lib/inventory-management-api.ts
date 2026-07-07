@@ -99,6 +99,8 @@ export interface InventoryCatalogItem {
   id: string;
   name: string;
   code?: string | null;
+  /** Id da receita vinculada quando o item é um composto (sub-receita). */
+  recipeId?: string | null;
   type: string;
   uom: {
     id: string;
@@ -218,7 +220,8 @@ export async function searchInventoryItems(search: string, limit = 20): Promise<
       return {
         id: p.id,
         name: p.name || 'Sem nome',
-        code: hasRecipe && recipe ? `SUBRECIPE:${recipe.id}` : (p.code || null),
+        code: p.barcode || null,
+        recipeId: hasRecipe && recipe ? recipe.id : null,
         type: itemType,
         uom: {
           id: p.unit || 'UN',
@@ -268,6 +271,17 @@ export async function listWorkbookInputs(): Promise<WorkbookInputRowDto[]> {
 
   const insumos = products.filter((p) => Boolean(p.is_raw_material) || isPackaging(p));
 
+  // Código exibido: código de barras cadastrado ou sequencial (0001, 0002...)
+  // estável pela ordem de criação. O vínculo com sub-receita vai em recipeId.
+  const byCreation = [...insumos].sort(
+    (a, b) =>
+      String(a.created_at || '').localeCompare(String(b.created_at || '')) ||
+      String(a.name || '').localeCompare(String(b.name || '')),
+  );
+  const sequentialCodeById = new Map<string, string>(
+    byCreation.map((p, index) => [p.id, String(index + 1).padStart(4, '0')]),
+  );
+
   return insumos.map((p): WorkbookInputRowDto => {
     const recipe = recipesByFinishedProductId.get(p.id);
     const hasRecipe = Boolean(recipe);
@@ -281,7 +295,8 @@ export async function listWorkbookInputs(): Promise<WorkbookInputRowDto[]> {
 
     return {
       id: p.id,
-      code: hasRecipe ? `SUBRECIPE:${recipe.id}` : (p.barcode || ''),
+      code: p.barcode || sequentialCodeById.get(p.id) || '',
+      recipeId: hasRecipe ? recipe.id : null,
       name: p.name || 'Sem nome',
       type,
       grossQuantity: stock,

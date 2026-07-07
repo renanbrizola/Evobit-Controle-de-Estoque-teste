@@ -17,6 +17,7 @@ import {
   Pencil,
   Plus,
   RefreshCw,
+  Search,
   Send,
   Tag,
   Trash2,
@@ -247,6 +248,24 @@ export function RecipeWorkbench({
   >([]);
   const [productModalOpen, setProductModalOpen] = useState(false);
   const [productStage, setProductStage] = useState<CompoundStageKey>('nome');
+  const [listSearch, setListSearch] = useState('');
+  const [listStatus, setListStatus] = useState<'TODOS' | 'DRAFT' | 'APPROVED'>('TODOS');
+
+  const filteredRecipes = useMemo(() => {
+    const term = listSearch.trim().toLowerCase();
+    return recipes.filter((recipe) => {
+      if (
+        term &&
+        !`${recipe.name} ${recipe.description ?? ''}`.toLowerCase().includes(term)
+      ) {
+        return false;
+      }
+      if (listStatus !== 'TODOS') {
+        return recipe.versions[0]?.status === listStatus;
+      }
+      return true;
+    });
+  }, [recipes, listSearch, listStatus]);
 
   const currentVersion = useMemo(
     () =>
@@ -1143,6 +1162,39 @@ export function RecipeWorkbench({
             </ActionButton>
           </div>
 
+          <div
+            className="flex flex-col gap-3 border-b px-5 py-3 sm:flex-row sm:items-center"
+            style={{ borderColor: 'var(--line-soft)' }}
+          >
+            <div className="relative flex-1 sm:max-w-xs">
+              <Search
+                size={15}
+                className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-soft)]"
+              />
+              <TextInput
+                value={listSearch}
+                onChange={(e) => setListSearch(e.target.value)}
+                placeholder="Buscar ficha por nome ou descrição…"
+                className="pl-9"
+              />
+            </div>
+            <div className="sm:w-48">
+              <SelectInput
+                value={listStatus}
+                onChange={(e) => setListStatus(e.target.value as typeof listStatus)}
+              >
+                <option value="TODOS">Todas as fichas</option>
+                <option value="DRAFT">Rascunhos</option>
+                <option value="APPROVED">Aprovadas</option>
+              </SelectInput>
+            </div>
+            {listSearch || listStatus !== 'TODOS' ? (
+              <p className="text-xs text-[var(--text-soft)]">
+                {filteredRecipes.length} de {recipes.length} ficha(s)
+              </p>
+            ) : null}
+          </div>
+
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
@@ -1166,8 +1218,8 @@ export function RecipeWorkbench({
                       Carregando produtos...
                     </td>
                   </tr>
-                ) : recipes.length ? (
-                  recipes.map((recipe) => {
+                ) : filteredRecipes.length ? (
+                  filteredRecipes.map((recipe) => {
                     const version = recipe.versions[0];
                     const yieldLabel =
                       version?.yieldQuantity && version?.yieldUom?.abbreviation
@@ -1253,6 +1305,12 @@ export function RecipeWorkbench({
                       </tr>
                     );
                   })
+                ) : recipes.length ? (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-14 text-center text-sm text-[var(--text-muted)]">
+                      Nenhuma ficha encontrada com a busca/filtro atual.
+                    </td>
+                  </tr>
                 ) : (
                   <tr>
                     <td colSpan={7} className="px-5 py-14 text-center">

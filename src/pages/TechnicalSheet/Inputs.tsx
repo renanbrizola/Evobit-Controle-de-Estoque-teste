@@ -138,8 +138,7 @@ export default function InputsPage() {
       {isDemoSession ? <StatusMessage tone="error" message="Entre com a API para registrar movimentações e atualizar estoque real." /> : null}
       {message ? <StatusMessage tone={message.tone} message={message.text} onDismiss={() => setMessage(null)} /> : null}
 
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <SheetBlock title="Visão operacional de insumos">
+      <SheetBlock title="Visão operacional de insumos">
           <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="min-w-full text-sm">
               <thead>
@@ -183,8 +182,9 @@ export default function InputsPage() {
               </tbody>
             </table>
           </div>
-        </SheetBlock>
+      </SheetBlock>
 
+      <div className="grid gap-6 xl:grid-cols-2">
         <div className="space-y-5">
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="rounded-xl border border-gray-200 bg-gray-50/60 p-4 text-center">
@@ -240,7 +240,9 @@ export default function InputsPage() {
               </ActionButton>
             </div>
           </SheetBlock>
+        </div>
 
+        <div className="space-y-5">
           <SheetBlock title="Parâmetros do insumo">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>

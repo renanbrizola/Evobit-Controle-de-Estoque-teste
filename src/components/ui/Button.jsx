@@ -10,7 +10,9 @@ export const Button = ({
     className,
     ...props
 }) => {
-    const baseStyles = "relative inline-flex items-center justify-center rounded-xl font-bold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
+    // Botões de ação (confirmar/cancelar/criar) usam o estilo CTA global
+    // (.btn-cta no index.css); ícones e ghosts mantêm o estilo discreto.
+    const useCta = size !== 'icon' && size !== 'none' && variant !== 'ghost';
 
     const sizes = {
         default: "px-6 py-3",
@@ -18,6 +20,30 @@ export const Button = ({
         icon: "p-2 w-10 h-10",
         none: ""
     };
+
+    if (useCta) {
+        const ctaVariants = {
+            primary: "btn-cta--gold",
+            secondary: "btn-cta--secondary",
+            danger: "btn-cta--danger",
+            success: "btn-cta--primary",
+        };
+        return (
+            <button
+                className={twMerge('btn-cta', sizes[size], ctaVariants[variant] || 'btn-cta--primary', className)}
+                disabled={isLoading || props.disabled}
+                {...props}
+            >
+                {/* span contra-inclinado (ver .btn-cta no index.css) */}
+                <span className="inline-flex items-center justify-center gap-2">
+                    {isLoading ? <Loader2 className="animate-spin" size={18} /> : null}
+                    {children}
+                </span>
+            </button>
+        );
+    }
+
+    const baseStyles = "relative inline-flex items-center justify-center rounded-xl font-bold transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none";
 
     const variants = {
         primary: "bg-gradient-gold text-brand-dark hover:shadow-glow hover:scale-[1.03] shadow-lg border-none font-bold tracking-wide",

@@ -108,8 +108,11 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('sb-access-token');
             localStorage.removeItem('sb-refresh-token');
 
-            // Hard reload to clear any in-memory state/cache and force login screen
-            window.location.href = '/';
+            // Hard reload to clear any in-memory state/cache and force login screen.
+            // HashRouter: recarregar em '/' caía no LicenseGuard sem sessão e
+            // mostrava "Acesso Expirado" — recarrega direto no #/login.
+            window.location.hash = '#/login';
+            window.location.reload();
         }
     };
 

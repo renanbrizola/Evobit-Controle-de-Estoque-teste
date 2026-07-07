@@ -119,8 +119,9 @@
     --state-info-100: #ddeaf0;
     --state-demo-700: #6c5a35;
     --state-demo-100: #efe6d5;
-    --radius-panel: 12px;
-    --radius-control: 10px;
+    /* Bordas retas (preferência do usuário) */
+    --radius-panel: 2px;
+    --radius-control: 2px;
     --shadow-panel: 0 1px 0 rgba(27, 35, 41, 0.06), 0 8px 24px rgba(27, 35, 41, 0.04);
     --shadow-overlay: 0 24px 64px rgba(27, 35, 41, 0.18);
 
@@ -429,4 +430,79 @@ h6 {
     opacity: 1 !important;
     transform: none !important;
   }
+}
+/* ═══ Bordas retas (preferência do usuário) ═══════════════════════════════
+   Achata os cantos arredondados do app inteiro, preservando elementos
+   intencionalmente circulares (dots, badges e avatares com rounded-full). */
+[class*='rounded']:not([class*='rounded-full']) {
+  border-radius: 2px !important;
+}
+
+/* ═══ Botão CTA (confirmar / cancelar / criar / avançar) ══════════════════
+   Estilo inclinado com sombra dura (adaptado do design enviado pelo usuário
+   às cores do sistema); hover destaca em dourado. O conteúdo do botão deve
+   estar dentro de um <span> para o texto ficar reto (contra-inclinação).
+   Em @layer components para utilitários Tailwind (px-*, text-*) poderem
+   sobrescrever tamanho/padding nos botões menores. */
+@layer components {
+.btn-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: none;
+  border-radius: 0 !important;
+  padding: 0.625rem 1.375rem;
+  font-weight: 800;
+  font-style: italic;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transform: skewX(-12deg);
+  transition: box-shadow 0.25s ease, filter 0.2s ease;
+  cursor: pointer;
+}
+.btn-cta > * {
+  transform: skewX(12deg);
+}
+.btn-cta:focus {
+  outline: none;
+}
+.btn-cta:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+.btn-cta--primary {
+  color: #ffffff;
+  background: var(--brand-primary-700);
+  box-shadow: 4px 4px 0 var(--text-strong);
+}
+.btn-cta--primary:hover:not(:disabled) {
+  box-shadow: 6px 6px 0 #c9a84c;
+}
+.btn-cta--gold {
+  color: var(--text-strong);
+  background: #c9a84c;
+  box-shadow: 4px 4px 0 var(--text-strong);
+}
+.btn-cta--gold:hover:not(:disabled) {
+  box-shadow: 6px 6px 0 var(--brand-primary-700);
+}
+.btn-cta--secondary {
+  color: var(--text-strong);
+  background: var(--bg-surface);
+  border: 1px solid var(--line-strong);
+  box-shadow: 4px 4px 0 var(--line-strong);
+}
+.btn-cta--secondary:hover:not(:disabled) {
+  border-color: #c9a84c;
+  box-shadow: 6px 6px 0 #c9a84c;
+}
+.btn-cta--danger {
+  color: #ffffff;
+  background: var(--state-danger-700);
+  box-shadow: 4px 4px 0 var(--text-strong);
+}
+.btn-cta--danger:hover:not(:disabled) {
+  box-shadow: 6px 6px 0 #c9a84c;
+}
 }
