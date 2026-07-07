@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Tags, Tag, Users, Package, History, LogOut, LayoutDashboard, ArrowLeftRight, ClipboardList, Settings, Grid, Home, PanelLeftClose, PanelLeft, PanelTop, ChevronRight } from 'lucide-react';
+import { Menu, X, ShoppingBag, Tags, Tag, Users, Package, History, LogOut, LayoutDashboard, ArrowLeftRight, ClipboardList, Settings, SlidersHorizontal, Grid, Home, PanelLeftClose, PanelLeft, PanelTop, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -132,7 +132,7 @@ const Layout = () => {
         { path: '/app/ficha-tecnica/precificacao', label: 'Precificação', icon: Tag, module: 'technical_sheet' },
         // Administração
         { path: '/app/ficha-tecnica/funcionarios', label: 'Funcionários', icon: Users, module: 'technical_sheet' },
-        { path: '/app/ficha-tecnica/configuracoes', label: 'Configurações da Ficha', icon: Settings, module: 'technical_sheet' },
+        { path: '/app/ficha-tecnica/configuracoes', label: 'Configurações da Ficha', icon: SlidersHorizontal, module: 'technical_sheet' },
 
         // --- VENDAS ---
         { path: '/app/dashboard-vendas', label: 'Dashboard', icon: BarChart3, module: 'sales' },
@@ -443,7 +443,9 @@ const Layout = () => {
                             </button>
                             <div className="mx-1 h-9 shrink-0 border-l border-[var(--sidebar-line)]" />
 
-                            <nav className="flex flex-1 items-stretch gap-1 overflow-x-auto custom-scrollbar">
+                            <nav className="flex flex-1 overflow-x-auto custom-scrollbar">
+                              {/* mx-auto centraliza quando cabe; com overflow volta a rolar sem cortar */}
+                              <div className="mx-auto flex items-stretch gap-1">
                                 {navItems.map((item) => {
                                     const active = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
                                     const isLocked = item.module && !modules[item.module];
@@ -493,6 +495,7 @@ const Layout = () => {
                                         </Link>
                                     );
                                 })}
+                              </div>
                             </nav>
 
                             <div className="mx-1 h-9 shrink-0 border-l border-[var(--sidebar-line)]" />
