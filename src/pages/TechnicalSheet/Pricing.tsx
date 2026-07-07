@@ -12,6 +12,7 @@ import { listPrices, savePrice, simulatePricing, type PriceRow, type PricingSimu
 import { getToneClassName } from '../../modules/ficha-tecnica/mock/technical-sheet-data';
 import { useWorkbookProductDetail, useWorkbookSnapshot } from '../../modules/ficha-tecnica/lib/workbook-api';
 import { useAuthStore } from '../../modules/ficha-tecnica/mock/auth.store';
+import { usePagination, PaginationBar } from '../../components/shared/TablePagination';
 
 function formatMaybeMoneyPerUnit(value: number | null, unit: string) {
   return value === null ? '---' : `${formatBRL(value)}/${unit}`;
@@ -190,6 +191,7 @@ export default function PricingPage() {
       return true;
     });
   }, [visibleProducts, listSearch, listFilter]);
+  const productsPagination = usePagination(filteredProducts);
   const pricingSummary = useMemo(() => {
     const averageOf = (values: number[]) => values.length ? values.reduce((sum, value) => sum + value, 0) / values.length : 0;
     return {
@@ -423,8 +425,13 @@ export default function PricingPage() {
                   { label: 'Margem %', align: 'right' },
                   { label: 'CMV %', align: 'right' },
                   { label: '', align: 'right' },
-                ].map((col) => (
-                  <th key={col.label} className={`px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-gray-400 ${col.align === 'right' ? 'text-right' : 'text-left'}`}>
+                ].map((col, index, cols) => (
+                  <th
+                    key={col.label || 'acoes'}
+                    className={`px-4 py-3 text-[11px] font-semibold uppercase tracking-wide text-gray-400 ${col.align === 'right' ? 'text-right' : 'text-left'} ${
+                      index === cols.length - 1 ? 'sticky right-0 z-10 bg-gray-50' : ''
+                    }`}
+                  >
                     {col.label}
                   </th>
                 ))}
@@ -438,7 +445,7 @@ export default function PricingPage() {
                   </td>
                 </tr>
               ) : null}
-              {filteredProducts.map((row) => {
+              {productsPagination.pageItems.map((row) => {
                 const rowPricingUnit = getDefaultPricingUnit(row);
                 return (
                 <tr
@@ -459,11 +466,13 @@ export default function PricingPage() {
                   <td className="px-4 py-3 text-right text-gray-600">{formatMaybeMoneyPerUnit(convertValueToPricingUnit(row.packagingCost, row, rowPricingUnit), rowPricingUnit)}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{formatMaybeMoneyPerUnit(convertValueToPricingUnit(row.equipmentCost ?? null, row, rowPricingUnit), rowPricingUnit)}</td>
                   <td className="px-4 py-3 text-right font-semibold text-gray-900">{formatMaybeMoneyPerUnit(convertValueToPricingUnit(row.totalCost, row, rowPricingUnit), rowPricingUnit)}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-emerald-600">{formatMaybeMoneyPerUnit(convertValueToPricingUnit(row.suggestedPrice, row, rowPricingUnit), rowPricingUnit)}</td>
-                  <td className="px-4 py-3 text-right font-semibold text-[#C9A84C]">{formatMaybeMoneyPerUnit(convertValueToPricingUnit(row.salePrice, row, rowPricingUnit), rowPricingUnit)}</td>
+                  {/* Preço sugerido em azul, preço de venda em verde (pedido do usuário) */}
+                  <td className="px-4 py-3 text-right font-semibold text-blue-600">{formatMaybeMoneyPerUnit(convertValueToPricingUnit(row.suggestedPrice, row, rowPricingUnit), rowPricingUnit)}</td>
+                  <td className="px-4 py-3 text-right font-semibold text-emerald-600">{formatMaybeMoneyPerUnit(convertValueToPricingUnit(row.salePrice, row, rowPricingUnit), rowPricingUnit)}</td>
                   <td className={`px-4 py-3 text-right font-semibold ${getMarginTone(row.marginPercent)}`}>{formatMaybePercent(row.marginPercent)}</td>
                   <td className="px-4 py-3 text-right text-gray-600">{formatMaybePercent(row.cmvPercent)}</td>
-                  <td className="px-4 py-3 text-right">
+                  {/* Coluna fixa: o botão Simular fica sempre visível mesmo com scroll horizontal */}
+                  <td className="sticky right-0 z-10 bg-white px-4 py-3 text-right shadow-[-10px_0_10px_-10px_rgba(27,35,41,0.25)]">
                     <button
                       onClick={() => openSimulator(row.code)}
                       className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-1.5 text-[12px] font-medium text-gray-600 shadow-sm transition-all hover:border-[#C9A84C] hover:text-[#C9A84C]"
@@ -478,6 +487,7 @@ export default function PricingPage() {
             </tbody>
           </table>
         </div>
+        <PaginationBar pagination={productsPagination} />
       </SheetBlock>
 
       {/* Price history */}
@@ -505,7 +515,7 @@ export default function PricingPage() {
                       {row.status === 'ACTIVE' ? 'Ativo' : row.status === 'APPROVED' ? 'Aprovado' : 'Rascunho'}
                     </span>
                   </td>
-                  <td className="px-4 py-3 font-semibold text-[#C9A84C]">
+                  <td className="px-4 py-3 font-semibold text-emerald-600">
                     {formatBRL(Number(row.finalPrice ?? row.suggestedPrice))}
                     {row.pricingUnit ? <span className="ml-1 text-xs font-medium text-gray-400">/{row.pricingUnit}</span> : null}
                   </td>

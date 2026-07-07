@@ -506,3 +506,17 @@ h6 {
   box-shadow: 6px 6px 0 #c9a84c;
 }
 }
+
+/* ═══ Botões verdes sempre com letras brancas ═════════════════════════════
+   O override do tema light escurecia qualquer .text-white, inclusive em
+   botões com fundo verde sólido. */
+button[class*='bg-emerald'],
+button[class*='bg-green'],
+a[class*='bg-emerald'],
+a[class*='bg-green'],
+[data-theme] button[class*='bg-emerald'].text-white,
+[data-theme] button[class*='bg-green'].text-white,
+[data-theme] a[class*='bg-emerald'].text-white,
+[data-theme] a[class*='bg-green'].text-white {
+  color: #ffffff !important;
+}

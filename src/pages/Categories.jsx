@@ -6,6 +6,7 @@ import { api } from '../services/api';
 import { toast } from 'sonner';
 import { Plus, Trash2, Tag, Loader2, Pencil, Check, X, Package, AlertTriangle, Search } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
+import { usePagination, PaginationBar } from '../components/shared/TablePagination';
 
 const Categories = () => {
     const { t } = useLanguage();
@@ -60,6 +61,8 @@ const Categories = () => {
         const q = filter.toLowerCase();
         return categories.filter(c => c.name.toLowerCase().includes(q));
     }, [categories, filter]);
+
+    const catsPagination = usePagination(filtered);
 
     const handleAdd = async () => {
         const trimmed = newName.trim();
@@ -226,7 +229,7 @@ const Categories = () => {
             ) : (
                 <Card className="!p-0 overflow-hidden">
                     <div className="divide-y divide-gray-100 dark:divide-white/5">
-                        {filtered.map((cat) => {
+                        {catsPagination.pageItems.map((cat) => {
                             const count = getProductCount(cat.name);
                             const isEditing = editingId === cat.id;
 
@@ -308,6 +311,7 @@ const Categories = () => {
                             </div>
                         )}
                     </div>
+                    <PaginationBar pagination={catsPagination} className="px-4 pb-4" />
                 </Card>
             )}
 

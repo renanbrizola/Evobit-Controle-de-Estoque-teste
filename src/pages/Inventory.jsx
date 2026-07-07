@@ -47,7 +47,7 @@ const Inventory = () => {
 
     // Pagination State
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(20);
+    const [itemsPerPage] = useState(15);
     const [, setTotalItems] = useState(0);
     const [totalPages, setTotalPages] = useState(1);
 
@@ -300,14 +300,14 @@ const Inventory = () => {
             {/* List Header / Search */}
             <Card className="p-4 flex flex-col md:flex-row gap-4 items-center bg-white/80 dark:bg-brand-dark/50 border border-gray-100 dark:border-white/5 backdrop-blur-md shadow-sm">
                 <div className="flex-1 w-full flex gap-2">
-                    <Button
-                        variant="outline"
+                    <button
+                        type="button"
                         onClick={() => setIsScannerOpen(true)}
-                        className="bg-brand-dark/5 border-gray-200 dark:border-white/10 hover:bg-brand-primary/10 hover:text-brand-primary h-10 w-10 p-0 flex items-center justify-center shrink-0"
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-brand-primary/40 bg-white text-brand-primary shadow-sm transition-colors hover:bg-brand-primary hover:text-white"
                         title="Escanear Código de Barras"
                     >
                         <ScanBarcode size={20} />
-                    </Button>
+                    </button>
                     <Input
                         icon={Search}
                         className="bg-white dark:bg-black/40 border-gray-200 dark:border-white/10 focus:border-brand-primary/50"

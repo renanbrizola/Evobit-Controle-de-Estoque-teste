@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Check, Clock, Layers, Pencil, Plus, Trash2, Users, X } from 'lucide-react';
+import { Check, Clock, Layers, Pencil, Plus, Search, Trash2, Users, X } from 'lucide-react';
+import { usePagination, PaginationBar } from '../../components/shared/TablePagination';
 import { ItemType, ProductType } from '../../modules/ficha-tecnica/types/enums';
 import { formatBRL } from '../../modules/ficha-tecnica/utils';
 import {
@@ -227,6 +228,14 @@ export default function CompoundInputsPage() {
   const [compounds, setCompounds] = useState<RecipeDetail[]>([]);
   const [uoms, setUoms] = useState<UomOption[]>([]);
   const [subRecipes, setSubRecipes] = useState<SubRecipeOption[]>([]);
+  const [listSearch, setListSearch] = useState('');
+
+  const filteredCompounds = useMemo(() => {
+    const term = listSearch.trim().toLowerCase();
+    if (!term) return compounds;
+    return compounds.filter((row) => `${row.name} ${row.description ?? ''}`.toLowerCase().includes(term));
+  }, [compounds, listSearch]);
+  const compoundsPagination = usePagination(filteredCompounds);
 
   // Wizard
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -523,10 +532,24 @@ export default function CompoundInputsPage() {
 
       {/* ── Lista ── */}
       <SheetBlock title="Insumos compostos">
-        <div className="mb-4 flex items-center justify-between gap-4">
-          <p className="text-sm text-gray-400">
-            {compounds.length} {compounds.length === 1 ? 'composto cadastrado' : 'compostos cadastrados'}
-          </p>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-gray-400">
+              {compounds.length} {compounds.length === 1 ? 'composto cadastrado' : 'compostos cadastrados'}
+            </p>
+            {compounds.length > 0 ? (
+              <div className="relative">
+                <Search size={14} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="search"
+                  value={listSearch}
+                  onChange={(e) => setListSearch(e.target.value)}
+                  placeholder="Buscar composto..."
+                  className="h-8 rounded-lg border border-gray-200 bg-white pl-8 pr-3 text-sm text-gray-800 outline-none placeholder:text-gray-400 focus:border-[#C9A84C] focus:ring-2 focus:ring-[#C9A84C]/15"
+                />
+              </div>
+            ) : null}
+          </div>
           <ActionButton onClick={openCreate} disabled={isDemoSession || loading} className="gap-1.5">
             <Plus size={13} /> Novo composto
           </ActionButton>
@@ -567,7 +590,7 @@ export default function CompoundInputsPage() {
                 </tr>
               </thead>
               <tbody>
-                {compounds.map((row) => {
+                {compoundsPagination.pageItems.map((row) => {
                   const version = row.versions[0];
                   const yieldQty = version ? Number(version.yieldQuantity) : null;
                   const yieldAbbr = version?.yieldUom?.abbreviation ?? '';
@@ -637,6 +660,7 @@ export default function CompoundInputsPage() {
             </table>
           </div>
         )}
+        <PaginationBar pagination={compoundsPagination} />
       </SheetBlock>
 
       {/* ── Wizard ── */}

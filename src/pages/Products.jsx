@@ -15,6 +15,7 @@ import ProductForm from '../components/forms/ProductForm';
 
 import { useLanguage } from '../contexts/LanguageContext';
 import DataImporter from '../components/shared/DataImporter';
+import { usePagination, PaginationBar } from '../components/shared/TablePagination';
 
 const Products = () => {
     const { t } = useLanguage();
@@ -24,7 +25,14 @@ const Products = () => {
     const [categories, setCategories] = useState([]);
     const [providers, setProviders] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [viewMode, setViewMode] = useState('grid'); // 'grid' | 'list'
+    // 'grid' | 'list' — lista é o padrão (preferência do usuário, persistida)
+    const [viewMode, setViewModeState] = useState(() => {
+        try { return localStorage.getItem('evobit_products_view') || 'list'; } catch { return 'list'; }
+    });
+    const setViewMode = (mode) => {
+        setViewModeState(mode);
+        try { localStorage.setItem('evobit_products_view', mode); } catch { /* noop */ }
+    };
     const [search, setSearch] = useState('');
     const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
 
@@ -235,6 +243,9 @@ const Products = () => {
         return items;
     }, [products, search, categoryFilter, sortConfig]);
 
+    // Máx. 15 itens por página nas visualizações (export/impressão seguem completos)
+    const pagination = usePagination(sortedProducts);
+
     // Header Component for Sorting
     const SortableHeader = ({ label, sortKey, align = 'left' }) => (
         <th
@@ -350,7 +361,7 @@ const Products = () => {
                     {viewMode === 'grid' ? (
                         // GRID VIEW
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            {sortedProducts.map((prod) => (
+                            {pagination.pageItems.map((prod) => (
                                 <div key={prod.id} className="glass-card p-5 group cursor-pointer" onClick={() => handleViewDetails(prod)}>
                                     {/* Actions Overlay */}
                                     <div className="absolute top-4 right-4 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10" onClick={(e) => e.stopPropagation()}>
@@ -452,7 +463,7 @@ const Products = () => {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            sortedProducts.map((prod) => (
+                                            pagination.pageItems.map((prod) => (
                                                 <tr key={prod.id} className="hover:bg-gray-50 dark:hover:bg-white/5 transition-colors group border-b border-gray-100 dark:border-white/5 last:border-0 cursor-pointer" onClick={() => handleViewDetails(prod)}>
                                                     <td className="py-4 px-6 font-medium text-gray-900 dark:text-white">
                                                         <div className="flex flex-col">
@@ -539,6 +550,7 @@ const Products = () => {
                             </div>
                         </div>
                     )}
+                    <PaginationBar pagination={pagination} />
                 </>
             )}
 

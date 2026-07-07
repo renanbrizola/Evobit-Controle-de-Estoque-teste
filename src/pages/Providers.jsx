@@ -12,6 +12,7 @@ import * as XLSX from 'xlsx';
 import DataImporter from '../components/shared/DataImporter';
 import { useLanguage } from '../contexts/LanguageContext';
 import ProviderForm from '../components/forms/ProviderForm';
+import { usePagination, PaginationBar } from '../components/shared/TablePagination';
 
 const Providers = () => {
     const { user } = useAuth();
@@ -252,6 +253,8 @@ const Providers = () => {
         return items;
     }, [providers, search, filterOrderDay, sortConfig]);
 
+    const pagination = usePagination(sortedProviders);
+
     // Header Component for Sorting
     const SortableHeader = ({ label, sortKey, align = 'left' }) => (
         <th
@@ -347,7 +350,7 @@ const Providers = () => {
                 <>
                     {viewMode === 'grid' ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-                            {sortedProviders.map((prov) => (
+                            {pagination.pageItems.map((prov) => (
                                 <div
                                     key={prov.id}
                                     className="glass-card p-5 group relative cursor-pointer hover:border-brand-primary/30 hover:scale-[1.01] transition-all duration-300"
@@ -472,7 +475,7 @@ const Providers = () => {
                                                 </td>
                                             </tr>
                                         ) : (
-                                            sortedProviders.map((prov) => (
+                                            pagination.pageItems.map((prov) => (
                                                 <tr
                                                     key={prov.id}
                                                     className="hover:bg-gray-50 dark:hover:bg-brand-dark/5 transition-colors border-b border-gray-100 dark:border-white/5 last:border-0 cursor-pointer group"
@@ -580,6 +583,7 @@ const Providers = () => {
                             </div>
                         </div>
                     )}
+                    <PaginationBar pagination={pagination} />
                 </>
             )}
 

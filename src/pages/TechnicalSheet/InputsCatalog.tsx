@@ -33,6 +33,7 @@ import {
   type InventoryUomOption,
 } from '../../modules/ficha-tecnica/lib/inventory-management-api';
 import { useWorkbookSnapshot } from '../../modules/ficha-tecnica/lib/workbook-api';
+import { usePagination, PaginationBar } from '../../components/shared/TablePagination';
 import { useAuthStore } from '../../modules/ficha-tecnica/mock/auth.store';
 
 interface InventoryEditorForm extends InventoryFormPayload {
@@ -364,8 +365,9 @@ export default function InputCatalogPage() {
   };
 
   const filtered = data.inputs.filter((row) =>
-    !search || row.name.toLowerCase().includes(search.toLowerCase()),
+    !search || `${row.name} ${row.code ?? ''}`.toLowerCase().includes(search.toLowerCase()),
   );
+  const catalogPagination = usePagination(filtered);
 
   return (
     <div className="space-y-5">
@@ -442,7 +444,7 @@ export default function InputCatalogPage() {
                     </td>
                   </tr>
                 ) : (
-                  filtered.map((row) => {
+                  catalogPagination.pageItems.map((row) => {
                     const compositeRecipeId =
                       row.type === ItemType.COMPOSITE ? (row.recipeId || '') : '';
 
@@ -511,6 +513,7 @@ export default function InputCatalogPage() {
             </table>
           </div>
         )}
+        <PaginationBar pagination={catalogPagination} />
       </SheetBlock>
 
       {/* Histórico de preços do item selecionado */}

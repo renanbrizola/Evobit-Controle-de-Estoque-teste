@@ -25,6 +25,7 @@ export const Button = ({
         const ctaVariants = {
             primary: "btn-cta--gold",
             secondary: "btn-cta--secondary",
+            outline: "btn-cta--secondary",
             danger: "btn-cta--danger",
             success: "btn-cta--primary",
         };

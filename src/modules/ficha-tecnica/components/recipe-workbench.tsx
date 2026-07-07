@@ -52,6 +52,7 @@ import { RecipeDescriptionField } from '../components/recipe-description-field';
 import { IngredientForm } from '../components/ingredient-form';
 import { IngredientCombobox } from '../components/ingredient-combobox';
 import { RecipeTable } from '../components/recipe-table';
+import { usePagination, PaginationBar } from '../../../components/shared/TablePagination';
 import { getApiErrorMessage } from '../lib/api-errors';
 import {
   type InventoryCatalogItem,
@@ -266,6 +267,7 @@ export function RecipeWorkbench({
       return true;
     });
   }, [recipes, listSearch, listStatus]);
+  const recipesPagination = usePagination(filteredRecipes);
 
   const currentVersion = useMemo(
     () =>
@@ -1219,7 +1221,7 @@ export function RecipeWorkbench({
                     </td>
                   </tr>
                 ) : filteredRecipes.length ? (
-                  filteredRecipes.map((recipe) => {
+                  recipesPagination.pageItems.map((recipe) => {
                     const version = recipe.versions[0];
                     const yieldLabel =
                       version?.yieldQuantity && version?.yieldUom?.abbreviation
@@ -1336,6 +1338,7 @@ export function RecipeWorkbench({
               </tbody>
             </table>
           </div>
+          <PaginationBar pagination={recipesPagination} className="px-5 pb-4" />
         </section>
 
         {productModalOpen ? (

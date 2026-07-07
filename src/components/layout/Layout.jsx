@@ -17,6 +17,18 @@ const Layout = () => {
 
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
     const [isModuleConfirmOpen, setIsModuleConfirmOpen] = useState(false);
+
+    // Preferência do usuário: menu lateral recolhido (trilho vertical de ícones)
+    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+        try { return localStorage.getItem('evobit_sidebar_collapsed') === '1'; } catch { return false; }
+    });
+    const toggleSidebarCollapsed = () => {
+        setSidebarCollapsed((current) => {
+            const next = !current;
+            try { localStorage.setItem('evobit_sidebar_collapsed', next ? '1' : '0'); } catch { /* noop */ }
+            return next;
+        });
+    };
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -170,20 +182,48 @@ const Layout = () => {
         }
     ].filter(g => g.items.length > 0);
 
-    const SidebarContent = () => (
+    const SidebarContent = ({ compact = false }) => (
         <div className="flex h-full flex-col font-sans">
-            <div className="border-b border-[var(--sidebar-line)] px-5 py-5">
+            <div className={clsx('border-b border-[var(--sidebar-line)] py-5', compact ? 'px-2' : 'px-5')}>
+                {compact ? (
+                    <div className="flex flex-col items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-[12px] border border-white/15 bg-white/10 text-xs font-bold tracking-[0.18em] text-[#C9A84C]">
+                            EV
+                        </div>
+                        <button
+                            onClick={() => navigate('/modules')}
+                            title="Trocar Módulo"
+                            className="flex h-10 w-10 items-center justify-center rounded-[10px] bg-white/10 text-[var(--sidebar-text-strong)] transition-colors hover:bg-white/15"
+                        >
+                            <Grid size={18} />
+                        </button>
+                        <button
+                            onClick={toggleSidebarCollapsed}
+                            title="Expandir menu"
+                            className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:text-[var(--sidebar-text-strong)]"
+                        >
+                            <PanelLeft size={18} />
+                        </button>
+                    </div>
+                ) : (
                 <div className="rounded-[14px] border border-white/10 bg-white/5 p-4">
                     <div className="flex items-center gap-3">
                         <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-white/15 bg-white/10 text-xs font-bold tracking-[0.18em] text-[#C9A84C]">
                             EV
                         </div>
-                        <div className="min-w-0">
+                        <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-semibold text-[var(--sidebar-text-strong)]">{companyName}</p>
                             <p className="mt-0.5 text-[10px] uppercase tracking-[0.2em] text-[var(--sidebar-text)]">
                                 precisão produtiva
                             </p>
                         </div>
+                        <button
+                            onClick={toggleSidebarCollapsed}
+                            title="Recolher menu"
+                            className="hidden lg:flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:text-[var(--sidebar-text-strong)]"
+                        >
+                            <PanelLeftClose size={15} />
+                        </button>
                     </div>
                     <div className="mt-4 border-t border-[var(--sidebar-line)] pt-3">
                         <button
@@ -195,15 +235,20 @@ const Layout = () => {
                         </button>
                     </div>
                 </div>
+                )}
             </div>
 
-            <nav className="flex-1 overflow-y-auto px-3 py-4 custom-scrollbar">
-                <div className="space-y-5">
-                    {groups.map((group) => (
+            <nav className={clsx('flex-1 overflow-y-auto py-4 custom-scrollbar', compact ? 'px-2' : 'px-3')}>
+                <div className={clsx(compact ? 'space-y-3' : 'space-y-5')}>
+                    {groups.map((group, groupIndex) => (
                         <div key={group.group}>
-                            <p className="px-2 pb-2 font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--sidebar-text)]">
-                                {group.group}
-                            </p>
+                            {compact ? (
+                                groupIndex > 0 ? <div className="mx-2 mb-3 border-t border-[var(--sidebar-line)]" /> : null
+                            ) : (
+                                <p className="px-2 pb-2 font-mono text-[10px] font-medium uppercase tracking-[0.22em] text-[var(--sidebar-text)]">
+                                    {group.group}
+                                </p>
+                            )}
                             <div className="space-y-1">
                                 {group.items.map((item) => {
                                     const active = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
@@ -213,6 +258,7 @@ const Layout = () => {
                                         <div key={item.path}>
                                             <Link
                                                 to={isLocked ? '#' : item.path}
+                                                title={compact ? item.label : undefined}
                                                 onClick={(e) => {
                                                     if (isLocked) {
                                                         e.preventDefault();
@@ -222,7 +268,8 @@ const Layout = () => {
                                                     }
                                                 }}
                                                 className={clsx(
-                                                    'relative flex items-center gap-3 rounded-[12px] border px-3 py-3 text-[13px] font-medium transition-all duration-150',
+                                                    'relative flex items-center rounded-[12px] border transition-all duration-150',
+                                                    compact ? 'justify-center px-0 py-2' : 'gap-3 px-3 py-3 text-[13px] font-medium',
                                                     active
                                                         ? 'border-white/12 bg-white/10 text-[var(--sidebar-text-strong)]'
                                                         : 'border-transparent text-[var(--sidebar-text)] hover:border-white/8 hover:bg-white/6 hover:text-[var(--sidebar-text-strong)]',
@@ -237,29 +284,39 @@ const Layout = () => {
                                                     style={{ backgroundColor: 'var(--color-secondary)' }}
                                                 />
                                                 {item.indent ? (
-                                                    <span className="flex h-5 w-5 shrink-0 items-center justify-center ml-1.5 text-sm text-[var(--sidebar-text)]">
-                                                        <ChevronRight size={12} />
+                                                    <span className={clsx(
+                                                        'flex shrink-0 items-center justify-center text-sm text-[var(--sidebar-text)]',
+                                                        compact ? 'h-9 w-9' : 'h-5 w-5 ml-1.5',
+                                                    )}>
+                                                        <ChevronRight size={compact ? 16 : 12} />
                                                     </span>
                                                 ) : (
                                                     <span
                                                         className={clsx(
-                                                            'flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border text-sm transition-colors',
+                                                            'flex shrink-0 items-center justify-center rounded-[10px] border text-sm transition-colors',
+                                                            compact ? 'h-11 w-11' : 'h-8 w-8',
                                                             active
                                                                 ? 'border-white/12 bg-black/10 text-[#f2dfbf]'
                                                                 : 'border-white/8 bg-black/5 text-[var(--sidebar-text)]',
                                                         )}
                                                     >
-                                                        <item.icon size={16} />
+                                                        <item.icon size={compact ? 22 : 16} />
                                                     </span>
                                                 )}
-                                                <span className={clsx("min-w-0 flex-1 truncate leading-none", item.indent && 'text-[12px]')}>{item.label}</span>
-                                                
-                                                {isLocked && <Lock size={14} className="text-[var(--sidebar-text)] shrink-0 ml-2" />}
-                                                
+                                                {!compact && (
+                                                    <span className={clsx("min-w-0 flex-1 truncate leading-none", item.indent && 'text-[12px]')}>{item.label}</span>
+                                                )}
+
+                                                {!compact && isLocked && <Lock size={14} className="text-[var(--sidebar-text)] shrink-0 ml-2" />}
+
                                                 {item.badge > 0 && !isLocked && (
-                                                    <span className="ml-auto inline-flex items-center rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400 border border-red-500/30">
-                                                        {item.badge > 9 ? '9+' : item.badge}
-                                                    </span>
+                                                    compact ? (
+                                                        <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-red-500" />
+                                                    ) : (
+                                                        <span className="ml-auto inline-flex items-center rounded-full bg-red-500/20 px-2 py-0.5 text-[10px] font-bold text-red-400 border border-red-500/30">
+                                                            {item.badge > 9 ? '9+' : item.badge}
+                                                        </span>
+                                                    )
                                                 )}
                                             </Link>
                                         </div>
@@ -271,10 +328,27 @@ const Layout = () => {
                 </div>
             </nav>
 
-            <div className="border-t border-[var(--sidebar-line)] px-4 py-4">
+            <div className={clsx('border-t border-[var(--sidebar-line)] py-4', compact ? 'px-2' : 'px-4')}>
+                {compact ? (
+                    <div className="flex flex-col items-center gap-3">
+                        <div
+                            title={user?.name ?? 'Usuário'}
+                            className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-[11px] font-bold uppercase text-[var(--sidebar-text-strong)]"
+                        >
+                            {(user?.name ?? 'DM').slice(0, 2)}
+                        </div>
+                        <button
+                            onClick={handleLogoutClick}
+                            title={t('menu', 'logout')}
+                            className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:border-white/14 hover:text-[var(--sidebar-text-strong)]"
+                        >
+                            <LogOut size={18} />
+                        </button>
+                    </div>
+                ) : (
                 <div className="rounded-[14px] border border-white/10 bg-white/5 p-3">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--color-secondary)] text-[11px] font-bold uppercase text-white">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-white/10 text-[11px] font-bold uppercase text-[var(--sidebar-text-strong)]">
                             {(user?.name ?? 'DM').slice(0, 2)}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -294,6 +368,7 @@ const Layout = () => {
                         </button>
                     </div>
                 </div>
+                )}
             </div>
         </div>
     );
@@ -301,10 +376,13 @@ const Layout = () => {
     return (
         <div className="flex h-screen bg-[var(--bg-app)] font-sans text-[var(--text-strong)] overflow-hidden">
             <aside
-                className="hidden w-[272px] shrink-0 border-r border-[var(--sidebar-line)] lg:flex lg:flex-col"
+                className={clsx(
+                    'hidden shrink-0 border-r border-[var(--sidebar-line)] transition-[width] duration-200 lg:flex lg:flex-col',
+                    sidebarCollapsed ? 'w-[88px]' : 'w-[272px]',
+                )}
                 style={{ backgroundColor: 'var(--sidebar-bg)' }}
             >
-                <SidebarContent />
+                <SidebarContent compact={sidebarCollapsed} />
             </aside>
 
             {isMenuOpen && (

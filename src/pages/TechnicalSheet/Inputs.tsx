@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Search } from 'lucide-react';
 import { StockMovementType } from '../../modules/ficha-tecnica/types/enums';
+import { usePagination, PaginationBar } from '../../components/shared/TablePagination';
 import { formatBRL, formatDate } from '../../modules/ficha-tecnica/utils';
 import {
   ActionButton,
@@ -39,6 +41,18 @@ export default function InputsPage() {
   const [loadingDetail, setLoadingDetail] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: 'success' | 'error'; text: string } | null>(null);
+  const [listSearch, setListSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState<'TODOS' | 'INSUMO' | 'EMBALAGEM' | 'COMPOSITE'>('TODOS');
+
+  const filteredInputs = useMemo(() => {
+    const term = listSearch.trim().toLowerCase();
+    return data.inputs.filter((row) => {
+      if (term && !`${row.name} ${row.code} ${row.supplier ?? ''} ${row.categoryName ?? ''}`.toLowerCase().includes(term)) return false;
+      if (typeFilter !== 'TODOS' && row.type !== typeFilter) return false;
+      return true;
+    });
+  }, [data.inputs, listSearch, typeFilter]);
+  const inputsPagination = usePagination(filteredInputs);
 
   useEffect(() => {
     if (!selectedInputId && data.inputs[0]?.id) {
@@ -139,6 +153,30 @@ export default function InputsPage() {
       {message ? <StatusMessage tone={message.tone} message={message.text} onDismiss={() => setMessage(null)} /> : null}
 
       <SheetBlock title="Visão operacional de insumos">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="relative flex-1 sm:max-w-xs">
+              <Search size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <TextInput
+                value={listSearch}
+                onChange={(event) => setListSearch(event.target.value)}
+                placeholder="Buscar por nome, código, fornecedor…"
+                className="pl-9"
+              />
+            </div>
+            <div className="sm:w-48">
+              <SelectInput value={typeFilter} onChange={(event) => setTypeFilter(event.target.value as typeof typeFilter)}>
+                <option value="TODOS">Todos os tipos</option>
+                <option value="INSUMO">Insumos</option>
+                <option value="EMBALAGEM">Embalagens</option>
+                <option value="COMPOSITE">Compostos</option>
+              </SelectInput>
+            </div>
+            {listSearch || typeFilter !== 'TODOS' ? (
+              <p className="text-xs text-gray-400">
+                {filteredInputs.length} de {data.inputs.length} insumo(s)
+              </p>
+            ) : null}
+          </div>
           <div className="overflow-x-auto rounded-xl border border-gray-200">
             <table className="min-w-full text-sm">
               <thead>
@@ -160,7 +198,14 @@ export default function InputsPage() {
                 </tr>
               </thead>
               <tbody>
-                {data.inputs.map((row) => (
+                {!inputsPagination.pageItems.length ? (
+                  <tr>
+                    <td colSpan={8} className="px-4 py-10 text-center text-sm text-gray-400">
+                      Nenhum insumo encontrado com a busca/filtro atual.
+                    </td>
+                  </tr>
+                ) : null}
+                {inputsPagination.pageItems.map((row) => (
                   <tr
                     key={row.id}
                     className={`border-b border-gray-100 transition-colors last:border-0 ${row.id === selectedInput?.id ? 'bg-amber-50/60' : 'hover:bg-gray-50/60'}`}
@@ -182,6 +227,7 @@ export default function InputsPage() {
               </tbody>
             </table>
           </div>
+          <PaginationBar pagination={inputsPagination} />
       </SheetBlock>
 
       <div className="grid gap-6 xl:grid-cols-2">
