@@ -9,7 +9,7 @@ import {
   WorkbookSnapshotDto,
 } from '../types/enums';
 import { listWorkbookInputs } from './inventory-management-api';
-import { listWorkbookProducts } from './recipes-management-api';
+import { getCostBreakdown, listWorkbookProducts } from './recipes-management-api';
 import { fetchWorkbookSections, emptyWorkbookSections } from './workbook-data-api';
 import {
   depreciationExpenses,
@@ -432,7 +432,9 @@ export function useWorkbookSnapshot(isDemoSession: boolean) {
 }
 
 export function useWorkbookProductDetail(code: string, isDemoSession: boolean) {
-  const [data, setData] = useState<WorkbookProductDetailDto | null>(buildMockProductDetail(code));
+  const [data, setData] = useState<WorkbookProductDetailDto | null>(() =>
+    isDemoSession ? buildMockProductDetail(code) : null,
+  );
   const [loading, setLoading] = useState(!isDemoSession);
   const [source, setSource] = useState<'demo' | 'api'>(isDemoSession ? 'demo' : 'api');
   const [refreshKey, setRefreshKey] = useState(0);
@@ -442,19 +444,76 @@ export function useWorkbookProductDetail(code: string, isDemoSession: boolean) {
   useEffect(() => {
     if (isDemoSession) {
       // Demo bootstrap: synchronous state init from local mock data is intentional.
-
       setData(buildMockProductDetail(code));
       setLoading(false);
       setSource('demo');
-       
       return;
     }
 
-    // Sem backend real para o detalhe do produto (o antigo api.get era um stub
-    // que sempre caía no mock). Mantém o mock até existir a fonte real.
-    setData(buildMockProductDetail(code));
-    setSource('demo');
-    setLoading(false);
+    // Sessão real: detalhe derivado das receitas reais (produto + taxas do
+    // workbook + breakdown de custos), sem mock.
+    let active = true;
+    setLoading(true);
+
+    (async () => {
+      try {
+        const sections = await fetchWorkbookSections();
+        const profile = sections.profile;
+        const products = await listWorkbookProducts(profile);
+        const product = products.find((row) => row.code === code) ?? null;
+        if (!active) return;
+
+        if (!product) {
+          setData(null);
+          setSource('api');
+          return;
+        }
+
+        let breakdown: WorkbookProductDetailDto['breakdown'] | null = null;
+        try {
+          breakdown = (await getCostBreakdown(product.recipeVersionId)) as WorkbookProductDetailDto['breakdown'];
+        } catch (err) {
+          console.error('[workbook] falha ao montar breakdown do produto:', err);
+        }
+        if (!active) return;
+
+        setData({
+          product,
+          targetMarginPercent: Number(profile?.targetMarginPercent ?? 0),
+          cardFeePercent: Number(profile?.cardFeePercent ?? 0),
+          deliveryFeePercent: Number(profile?.deliveryFeePercent ?? 0),
+          commissionPercent: Number(profile?.commissionPercent ?? 0),
+          taxPercent: Number(profile?.taxPercent ?? 0),
+          operationalCostPercent: Number(profile?.operationalCostPercent ?? 0),
+          breakdown: breakdown ?? {
+            recipeId: product.recipeId,
+            recipeVersionId: product.recipeVersionId,
+            yieldQuantity: product.yieldQuantity,
+            ingredients: [],
+            packaging: [],
+            labor: [],
+            equipment: [],
+            totalIngredientsCost: 0,
+            totalPackagingCost: 0,
+            totalLaborCost: 0,
+            totalEquipmentCost: 0,
+            totalBatchCost: product.totalCost * (product.yieldQuantity || 1),
+            unitCost: product.totalCost,
+            currency: 'BRL',
+          },
+        });
+        setSource('api');
+      } catch (err) {
+        console.error('[workbook] falha ao carregar detalhe do produto:', err);
+        if (active) setData(null);
+      } finally {
+        if (active) setLoading(false);
+      }
+    })();
+
+    return () => {
+      active = false;
+    };
   }, [code, isDemoSession, refreshKey]);
 
   return { data, loading, source, reload };
