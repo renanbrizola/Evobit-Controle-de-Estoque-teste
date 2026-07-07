@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Tags, Tag, Users, Package, History, LogOut, LayoutDashboard, ArrowLeftRight, ClipboardList, Settings, Grid, Home, PanelLeftClose, PanelLeft, ChevronRight } from 'lucide-react';
+import { Menu, X, ShoppingBag, Tags, Tag, Users, Package, History, LogOut, LayoutDashboard, ArrowLeftRight, ClipboardList, Settings, Grid, Home, PanelLeftClose, PanelLeft, PanelTop, ChevronRight } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTheme } from '../../contexts/ThemeContext';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -18,17 +18,22 @@ const Layout = () => {
     const [isLogoutConfirmOpen, setIsLogoutConfirmOpen] = useState(false);
     const [isModuleConfirmOpen, setIsModuleConfirmOpen] = useState(false);
 
-    // Preferência do usuário: menu lateral recolhido (trilho vertical de ícones)
-    const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-        try { return localStorage.getItem('evobit_sidebar_collapsed') === '1'; } catch { return false; }
+    // Preferência do usuário para o menu principal:
+    // 'expanded' = lateral completo | 'collapsed' = lateral reduzido (ícones)
+    // 'horizontal' = barra superior com ícones maiores
+    const [menuMode, setMenuModeState] = useState(() => {
+        try {
+            const stored = localStorage.getItem('evobit_menu_mode');
+            if (stored === 'expanded' || stored === 'collapsed' || stored === 'horizontal') return stored;
+            // migração da preferência antiga (booleano de recolhido)
+            return localStorage.getItem('evobit_sidebar_collapsed') === '1' ? 'collapsed' : 'expanded';
+        } catch { return 'expanded'; }
     });
-    const toggleSidebarCollapsed = () => {
-        setSidebarCollapsed((current) => {
-            const next = !current;
-            try { localStorage.setItem('evobit_sidebar_collapsed', next ? '1' : '0'); } catch { /* noop */ }
-            return next;
-        });
+    const setMenuMode = (mode) => {
+        setMenuModeState(mode);
+        try { localStorage.setItem('evobit_menu_mode', mode); } catch { /* noop */ }
     };
+    const sidebarCollapsed = menuMode === 'collapsed';
     const navigate = useNavigate();
     const location = useLocation();
 
@@ -198,11 +203,18 @@ const Layout = () => {
                             <Grid size={18} />
                         </button>
                         <button
-                            onClick={toggleSidebarCollapsed}
+                            onClick={() => setMenuMode('expanded')}
                             title="Expandir menu"
                             className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:text-[var(--sidebar-text-strong)]"
                         >
                             <PanelLeft size={18} />
+                        </button>
+                        <button
+                            onClick={() => setMenuMode('horizontal')}
+                            title="Menu horizontal (barra superior)"
+                            className="flex h-10 w-10 items-center justify-center rounded-[10px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:text-[var(--sidebar-text-strong)]"
+                        >
+                            <PanelTop size={18} />
                         </button>
                     </div>
                 ) : (
@@ -217,13 +229,22 @@ const Layout = () => {
                                 precisão produtiva
                             </p>
                         </div>
-                        <button
-                            onClick={toggleSidebarCollapsed}
-                            title="Recolher menu"
-                            className="hidden lg:flex h-8 w-8 shrink-0 items-center justify-center rounded-[10px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:text-[var(--sidebar-text-strong)]"
-                        >
-                            <PanelLeftClose size={15} />
-                        </button>
+                        <div className="hidden lg:flex shrink-0 flex-col gap-1">
+                            <button
+                                onClick={() => setMenuMode('collapsed')}
+                                title="Recolher menu (só ícones)"
+                                className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:text-[var(--sidebar-text-strong)]"
+                            >
+                                <PanelLeftClose size={14} />
+                            </button>
+                            <button
+                                onClick={() => setMenuMode('horizontal')}
+                                title="Menu horizontal (barra superior)"
+                                className="flex h-7 w-7 items-center justify-center rounded-[8px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:text-[var(--sidebar-text-strong)]"
+                            >
+                                <PanelTop size={14} />
+                            </button>
+                        </div>
                     </div>
                     <div className="mt-4 border-t border-[var(--sidebar-line)] pt-3">
                         <button
@@ -375,15 +396,17 @@ const Layout = () => {
 
     return (
         <div className="flex h-screen bg-[var(--bg-app)] font-sans text-[var(--text-strong)] overflow-hidden">
-            <aside
-                className={clsx(
-                    'hidden shrink-0 border-r border-[var(--sidebar-line)] transition-[width] duration-200 lg:flex lg:flex-col',
-                    sidebarCollapsed ? 'w-[88px]' : 'w-[272px]',
-                )}
-                style={{ backgroundColor: 'var(--sidebar-bg)' }}
-            >
-                <SidebarContent compact={sidebarCollapsed} />
-            </aside>
+            {menuMode !== 'horizontal' ? (
+                <aside
+                    className={clsx(
+                        'hidden shrink-0 border-r border-[var(--sidebar-line)] transition-[width] duration-200 lg:flex lg:flex-col',
+                        sidebarCollapsed ? 'w-[88px]' : 'w-[272px]',
+                    )}
+                    style={{ backgroundColor: 'var(--sidebar-bg)' }}
+                >
+                    <SidebarContent compact={sidebarCollapsed} />
+                </aside>
+            ) : null}
 
             {isMenuOpen && (
                 <div className="fixed inset-0 z-50 lg:hidden">
@@ -402,6 +425,94 @@ const Layout = () => {
             )}
 
             <div className="flex flex-1 flex-col min-w-0 h-screen overflow-hidden">
+                {menuMode === 'horizontal' ? (
+                    <div
+                        className="hidden lg:block border-b border-[var(--sidebar-line)]"
+                        style={{ backgroundColor: 'var(--sidebar-bg)' }}
+                    >
+                        <div className="flex items-center gap-2 px-4 py-2">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] border border-white/15 bg-white/10 text-[11px] font-bold tracking-[0.18em] text-[#C9A84C]">
+                                EV
+                            </div>
+                            <button
+                                onClick={() => navigate('/modules')}
+                                title="Trocar Módulo"
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-white/10 text-[var(--sidebar-text-strong)] transition-colors hover:bg-white/15"
+                            >
+                                <Grid size={18} />
+                            </button>
+                            <div className="mx-1 h-9 shrink-0 border-l border-[var(--sidebar-line)]" />
+
+                            <nav className="flex flex-1 items-stretch gap-1 overflow-x-auto custom-scrollbar">
+                                {navItems.map((item) => {
+                                    const active = location.pathname === item.path || location.pathname.startsWith(`${item.path}/`);
+                                    const isLocked = item.module && !modules[item.module];
+                                    return (
+                                        <Link
+                                            key={item.path}
+                                            to={isLocked ? '#' : item.path}
+                                            title={item.label}
+                                            onClick={(e) => {
+                                                if (isLocked) {
+                                                    e.preventDefault();
+                                                    navigate('/modules');
+                                                }
+                                            }}
+                                            className={clsx(
+                                                'relative flex min-w-[74px] shrink-0 flex-col items-center justify-center gap-1 rounded-[10px] border px-2 py-1.5 transition-all duration-150',
+                                                active
+                                                    ? 'border-white/12 bg-white/10'
+                                                    : 'border-transparent hover:border-white/8 hover:bg-white/6',
+                                                isLocked && 'opacity-50 cursor-not-allowed hover:bg-transparent',
+                                            )}
+                                        >
+                                            <span
+                                                className={clsx(
+                                                    'flex h-9 w-9 items-center justify-center rounded-[10px] border transition-colors',
+                                                    active
+                                                        ? 'border-white/12 bg-black/10 text-[#f2dfbf]'
+                                                        : 'border-white/8 bg-black/5 text-[var(--sidebar-text)]',
+                                                )}
+                                            >
+                                                <item.icon size={20} />
+                                            </span>
+                                            <span
+                                                className={clsx(
+                                                    'max-w-[90px] truncate text-[10px] font-medium leading-none',
+                                                    active ? 'text-[var(--sidebar-text-strong)]' : 'text-[var(--sidebar-text)]',
+                                                )}
+                                            >
+                                                {item.label}
+                                            </span>
+                                            {item.badge > 0 && !isLocked && (
+                                                <span className="absolute right-1.5 top-1 h-2 w-2 rounded-full bg-red-500" />
+                                            )}
+                                            {isLocked && (
+                                                <Lock size={11} className="absolute right-1.5 top-1 text-[var(--sidebar-text)]" />
+                                            )}
+                                        </Link>
+                                    );
+                                })}
+                            </nav>
+
+                            <div className="mx-1 h-9 shrink-0 border-l border-[var(--sidebar-line)]" />
+                            <button
+                                onClick={() => setMenuMode('expanded')}
+                                title="Menu lateral"
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:text-[var(--sidebar-text-strong)]"
+                            >
+                                <PanelLeft size={18} />
+                            </button>
+                            <button
+                                onClick={handleLogoutClick}
+                                title={t('menu', 'logout')}
+                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] border border-white/8 bg-black/10 text-[var(--sidebar-text)] transition-colors hover:text-[var(--sidebar-text-strong)]"
+                            >
+                                <LogOut size={16} />
+                            </button>
+                        </div>
+                    </div>
+                ) : null}
                 <header className="sticky top-0 z-20 border-b border-[var(--line-soft)] bg-[var(--bg-app)]">
                     <div className="flex items-start gap-4 px-4 py-3 lg:px-6">
                         <button
