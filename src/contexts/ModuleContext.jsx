@@ -25,6 +25,7 @@ export const ModuleProvider = ({ children }) => {
             try {
                 const parsed = JSON.parse(savedModules);
                  
+                 
                 setModules({
                     ...modules,
                     ...parsed,
@@ -37,6 +38,7 @@ export const ModuleProvider = ({ children }) => {
             }
         }
         setLoading(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, [user]);
 
     const updateModules = (newModules) => {

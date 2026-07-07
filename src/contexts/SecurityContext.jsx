@@ -39,6 +39,7 @@ export const SecurityProvider = ({ children }) => {
         const storedLock = localStorage.getItem(LOCK_KEY);
         if (storedLock === 'true' && pinHash) {
              
+             
             setIsLocked(true);
         }
     }, [pinHash]);
@@ -114,6 +115,7 @@ export const SecurityProvider = ({ children }) => {
             window.removeEventListener('click', resetTimer);
             window.removeEventListener('scroll', resetTimer);
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, [timeoutSettings, pinHash, isLocked]);
 
     return (

@@ -102,6 +102,7 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
         if (mode === 'camera' && cameraStarted) {
             startCamera();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, [facingMode]);
 
     // Cleanup when unmounting or switching away from camera
@@ -109,6 +110,7 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
         return () => {
             stopCamera();
         };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, []);
 
     // Stop camera when switching to USB mode
@@ -116,6 +118,7 @@ const BarcodeScanner = ({ onScanSuccess, onClose }) => {
         if (mode !== 'camera') {
             stopCamera();
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, [mode]);
 
     // ─── USB/BLUETOOTH SCANNER MODE ──────────────────

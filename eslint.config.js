@@ -73,17 +73,18 @@ export default defineConfig([
     plugins: { react: reactPlugin },
     rules: { 'react/jsx-uses-vars': 'error' },
   },
-  // Regras desligadas de forma deliberada (aplicam-se a todos os arquivos):
-  // - only-export-components: nicety de HMR (Fast Refresh), sem valor em produção.
-  // - exhaustive-deps / set-state-in-effect: o código usa de propósito o padrão
-  //   "buscar no mount" (deps vazias) e init de flags de montagem; reativar e
-  //   ajustar deps caso a caso é um esforço separado. `no-unused-vars` segue
-  //   estrito, que é o que pega código morto de verdade.
+  // Regras de qualidade React reativadas (faxina 02/07/2026). Padrões
+  // intencionais (fetch-on-mount com deps vazias, init síncrono de estado em
+  // effect de bootstrap) são anotados caso a caso com eslint-disable-next-line
+  // + justificativa, em vez de desligar a regra globalmente.
   {
+    files: ['**/*.{js,jsx,ts,tsx}'],
+    ignores: ['electron/**'],
+    plugins: { 'react-hooks': reactHooks },
     rules: {
-      'react-refresh/only-export-components': 'off',
-      'react-hooks/exhaustive-deps': 'off',
-      'react-hooks/set-state-in-effect': 'off',
+      'react-refresh/only-export-components': 'off', // nicety de HMR; contextos exportam hook+provider por design
+      'react-hooks/exhaustive-deps': 'error',
+      'react-hooks/set-state-in-effect': 'error',
     },
   },
 ])

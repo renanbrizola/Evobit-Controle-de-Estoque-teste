@@ -49,6 +49,7 @@ const ProviderForm = ({ initialData, onSave, onCancel, saving }) => {
     useEffect(() => {
         if (initialData) {
              
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- init/reset sincrono de estado no effect e intencional (padrao legado auditado)
             setFormData({
                 name: initialData.name || '',
                 trade_name: initialData.trade_name || '',

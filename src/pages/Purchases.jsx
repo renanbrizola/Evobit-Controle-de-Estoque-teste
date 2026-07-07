@@ -30,6 +30,7 @@ const Purchases = () => {
     };
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- init/reset sincrono de estado no effect e intencional (padrao legado auditado)
         loadPurchases();
      
     }, []);

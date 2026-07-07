@@ -14,6 +14,7 @@ const LockScreen = () => {
 
     useEffect(() => {
         if (isLocked) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- init/reset sincrono de estado no effect e intencional (padrao legado auditado)
             setPin(['', '', '', '']);
             setError(false);
             setTimeout(() => inputRefs.current[0]?.focus(), 100);

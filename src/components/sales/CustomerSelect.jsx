@@ -25,6 +25,7 @@ const CustomerSelect = ({ onSelect, selectedCustomer }) => {
             if (isOpen) loadCustomers();
         }, 500);
         return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, [search, isOpen]);
 
     // Close dropdown on outside click

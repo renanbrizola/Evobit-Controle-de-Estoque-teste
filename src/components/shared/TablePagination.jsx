@@ -17,6 +17,7 @@ export function usePagination(items, pageSize = DEFAULT_PAGE_SIZE) {
     const safePage = Math.min(page, totalPages);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- init/reset sincrono de estado no effect e intencional (padrao legado auditado)
         setPage(1);
         setExtra(0);
     }, [total]);

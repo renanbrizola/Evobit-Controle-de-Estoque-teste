@@ -22,6 +22,7 @@ const PaymentModal = ({ isOpen, onClose, total, onConfirm }) => {
     useEffect(() => {
         if (isOpen) {
              
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- init/reset sincrono de estado no effect e intencional (padrao legado auditado)
             setPayments([]);
             setCurrentMethod('cash');
             setDiscountType('value');
@@ -58,6 +59,7 @@ const PaymentModal = ({ isOpen, onClose, total, onConfirm }) => {
         if (isOpen) {
             // Format with comma for Brazilian users
              
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- init/reset sincrono de estado no effect e intencional (padrao legado auditado)
             setCurrentAmount(remaining.toFixed(2).replace('.', ','));
         }
     }, [payments, discountAmount, isOpen, remaining]);

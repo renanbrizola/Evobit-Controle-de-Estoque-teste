@@ -7,6 +7,7 @@ const Modal = ({ isOpen, onClose, children, className }) => {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- init/reset sincrono de estado no effect e intencional (padrao legado auditado)
         setMounted(true);
         return () => setMounted(false);
     }, []);

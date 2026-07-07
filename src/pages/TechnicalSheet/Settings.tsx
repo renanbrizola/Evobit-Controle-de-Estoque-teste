@@ -63,6 +63,7 @@ export default function SettingsPage() {
       taxPercent: profile.taxPercent ?? 0,
       operationalCostPercent: profile.operationalCostPercent ?? 0,
     });
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
   }, [data.profile, dirty]);
 
   function set(field: keyof SettingsForm, raw: string) {

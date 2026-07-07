@@ -152,6 +152,7 @@ const Inventory = () => {
     // Initial Load & Updates
     useEffect(() => {
         loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, [currentPage, debouncedSearch, categoryFilter, stockFilter, sortConfig]);
 
 

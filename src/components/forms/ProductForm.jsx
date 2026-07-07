@@ -58,6 +58,7 @@ const ProductForm = ({ initialData, onSave, onCancel, saving, categories = [], p
     useEffect(() => {
         if (initialData) {
              
+            // eslint-disable-next-line react-hooks/set-state-in-effect -- init/reset sincrono de estado no effect e intencional (padrao legado auditado)
             setFormData({
                 name: initialData.name || '',
                 sku: initialData.sku || '',

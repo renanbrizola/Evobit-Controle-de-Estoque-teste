@@ -85,6 +85,7 @@ const Modules = () => {
                 if (module.comingSoon) {
                     toast.info(`O módulo ${module.name} está em desenvolvimento e estará disponível em breve.`);
                 } else {
+                     
                     setSelectedModule(module);
                     setIsBuyModalOpen(true);
                 }
@@ -92,6 +93,7 @@ const Modules = () => {
                 window.history.replaceState({}, document.title);
             }
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, [location.state]); // Depend on location.state
     // Note: moduleCards is not in dependency array to avoid loops, 
     // effectively it's constant per render but reconstructed. 

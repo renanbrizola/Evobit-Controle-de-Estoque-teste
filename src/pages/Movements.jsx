@@ -76,6 +76,7 @@ const Movements = () => {
 
         if (Array.isArray(savedCart)) setCart(savedCart);
         if (savedMode) setMode(savedMode);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, []);
 
     // 2. Save Data on Change

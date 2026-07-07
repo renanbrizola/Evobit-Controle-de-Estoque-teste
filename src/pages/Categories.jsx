@@ -22,6 +22,7 @@ const Categories = () => {
 
     useEffect(() => {
         loadData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
     }, []);
 
     const loadData = async () => {

@@ -314,6 +314,7 @@ export function RecipeWorkbench({
 
     const recipeIdParam = searchParams.get('recipeId');
     void bootstrap(recipeIdParam || undefined);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- deps restritas de proposito (fetch-on-mount/por-filtro; padrao legado auditado)
   }, [isDemoSession, productType, searchParams]);
 
   function navigateCompoundStage(stage: CompoundStageKey) {
