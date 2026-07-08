@@ -78,7 +78,7 @@ async function requireUserId(): Promise<string> {
   // Modo equipe: membro precisa da permissão de ficha técnica liberada pelo
   // dono; os dados do workbook pertencem ao dono da loja (user_id = ownerId).
   if (!canTeamMember(user, ['technical_sheet_write'])) {
-    throw new Error('Você não tem permissão para editar a ficha técnica. Peça ao dono da conta.');
+    throw new Error('Você não tem permissão para editar a ficha técnica. Peça ao proprietário da conta.');
   }
   return user.ownerId || user.id;
 }

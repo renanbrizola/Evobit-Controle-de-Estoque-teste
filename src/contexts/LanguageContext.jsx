@@ -256,7 +256,7 @@ const translations = {
                 emailLabel: "E-mail do Funcionário",
                 addButton: "Adicionar à Equipe",
                 membersTitle: "Membros Atuais",
-                you: "Você (Dono)",
+                you: "Você (Proprietário)",
                 noMembers: "Nenhum membro convidado ainda.",
                 active: "Membro Ativo",
                 pending: "Pendente...",

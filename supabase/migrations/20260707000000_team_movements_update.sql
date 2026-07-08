@@ -10,6 +10,7 @@
 -- ==============================================================================
 
 DROP POLICY IF EXISTS "Users can update own movements" ON public.movements;
+DROP POLICY IF EXISTS "Team can update movements" ON public.movements;
 
 CREATE POLICY "Team can update movements"
 ON public.movements FOR UPDATE

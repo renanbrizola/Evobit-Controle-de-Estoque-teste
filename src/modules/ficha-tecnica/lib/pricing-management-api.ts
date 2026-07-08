@@ -248,7 +248,7 @@ export async function savePrice(payload: SavePricePayload): Promise<PriceRow> {
   // Modo equipe: precificar exige a permissão de ficha técnica
   const currentUser = await getCurrentUser();
   if (!canTeamMember(currentUser, ['technical_sheet_write'])) {
-    throw new Error('Você não tem permissão para precificar. Peça ao dono da conta.');
+    throw new Error('Você não tem permissão para precificar. Peça ao proprietário da conta.');
   }
 
   const recipeId = recipeIdFromVersion(payload.recipeVersionId);

@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabaseClient'; // Kept for teams (online-firs
 import { getCurrentUser, canTeamMember } from './authHelper';
 import { toast } from 'sonner';
 
-const TEAM_PERMISSION_MSG = 'Você não tem permissão para esta ação. Peça ao dono da conta para liberar em Configurações → Equipe.';
+const TEAM_PERMISSION_MSG = 'Você não tem permissão para esta ação. Peça ao proprietário da conta para liberar em Configurações → Equipe.';
 
 /**
  * Modo equipe: bloqueia a ação se o usuário logado é membro convidado sem a
