@@ -1,8 +1,30 @@
 import { getDatabase } from '../db/database';
 import { v4 as uuidv4 } from 'uuid';
 import { supabase } from '../lib/supabaseClient'; // Kept for teams (online-first)
-import { getCurrentUser } from './authHelper';
+import { getCurrentUser, canTeamMember } from './authHelper';
 import { toast } from 'sonner';
+
+const TEAM_PERMISSION_MSG = 'Você não tem permissão para esta ação. Peça ao dono da conta para liberar em Configurações → Equipe.';
+
+/**
+ * Modo equipe: bloqueia a ação se o usuário logado é membro convidado sem a
+ * permissão liberada pelo dono. O dono passa sempre. A RLS aplica a mesma
+ * regra no servidor; este guard falha cedo, ANTES da escrita local (RxDB),
+ * para o membro não "salvar" algo que nunca sincronizaria. Sem sessão local
+ * (user null) mantém o comportamento offline antigo — a RLS decide no push.
+ */
+const assertCan = (user, perms) => {
+    if (!user) return;
+    if (!canTeamMember(user, perms)) {
+        throw new Error(TEAM_PERMISSION_MSG);
+    }
+};
+
+const requirePermission = async (perms) => {
+    const user = await getCurrentUser();
+    assertCan(user, perms);
+    return user;
+};
 
 export const api = {
     // PRODUCTS
@@ -132,6 +154,7 @@ export const api = {
             };
         },
         bulkDelete: async (ids) => {
+            await requirePermission(['can_delete']);
             const db = await getDatabase();
             if (!ids || ids.length === 0) return;
 
@@ -158,6 +181,8 @@ export const api = {
             if (!user || !user.id) {
                 throw new Error("Sessão de usuário ausente. Faça login novamente para cadastrar.");
             }
+            // Produtos são master data dos dois módulos (insumos/fichas criam produtos)
+            assertCan(user, ['inventory_write', 'technical_sheet_write']);
 
             const db = await getDatabase();
             if (!db) {
@@ -168,7 +193,7 @@ export const api = {
             const newProduct = {
                 id: uuidv4(),
                 ...product,
-                user_id: user.id,
+                user_id: user.ownerId || user.id,
                 updated_at: new Date().toISOString(),
                 current_stock: Number(product.current_stock || 0),
                 min_stock: Number(product.min_stock || 0),
@@ -200,6 +225,7 @@ export const api = {
             return newProduct;
         },
         update: async (id, updates) => {
+            await requirePermission(['inventory_write', 'technical_sheet_write']);
             const db = await getDatabase();
             const productDoc = await db.products.findOne(id).exec();
             if (!productDoc) throw new Error("Produto não encontrado");
@@ -222,6 +248,7 @@ export const api = {
             return productDoc.toJSON();
         },
         bulkUpdate: async (ids, updates) => {
+            await requirePermission(['inventory_write', 'technical_sheet_write']);
             const db = await getDatabase();
             if (!ids || ids.length === 0) return 0;
 
@@ -241,6 +268,7 @@ export const api = {
             return docs.length;
         },
         delete: async (id) => {
+            await requirePermission(['can_delete']);
             const db = await getDatabase();
             const productDoc = await db.products.findOne(id).exec();
             if (productDoc) {
@@ -338,6 +366,7 @@ export const api = {
             if (!user || !user.id) {
                 throw new Error("Sessão de usuário ausente. Faça login novamente para cadastrar.");
             }
+            assertCan(user, ['inventory_write']);
 
             const results = [];
             const now = new Date().toISOString();
@@ -379,7 +408,7 @@ export const api = {
                         expiration_date: item.validity || '',
                         provider: item.provider || '',
                         movement_id: movementId,
-                        user_id: user.id,
+                        user_id: user.ownerId || user.id,
                         created_at: now,
                         updated_at: now,
                         deleted_at: ''
@@ -403,7 +432,7 @@ export const api = {
                     batch_id: batchId || '',
                     reference_id: '',
                     date: now,
-                    user_id: user.id,
+                    user_id: user.ownerId || user.id,
                     updated_at: now
                 };
 
@@ -485,6 +514,7 @@ export const api = {
          * @param {string} [reversalReason] - Optional reason for the reversal
          */
         reverse: async (movementId, reversalReason) => {
+            await requirePermission(['inventory_write']);
             const db = await getDatabase();
 
             // 1. Find the original movement
@@ -537,7 +567,8 @@ export const api = {
             if (!user || !user.id) {
                 throw new Error("Sessão de usuário ausente. Faça login novamente para cadastrar.");
             }
-            const userId = user.id;
+            assertCan(user, ['inventory_write']);
+            const userId = user.ownerId || user.id;
 
             if (!name || typeof name !== 'string' || !name.trim()) {
                 throw new Error("Nome da categoria inválido");
@@ -560,6 +591,7 @@ export const api = {
             }
         },
         update: async (id, name) => {
+            await requirePermission(['inventory_write']);
             if (!name || typeof name !== 'string' || !name.trim()) {
                 throw new Error("Nome da categoria inválido");
             }
@@ -593,6 +625,7 @@ export const api = {
             return doc.toJSON();
         },
         delete: async (id) => {
+            await requirePermission(['can_delete']);
             const db = await getDatabase();
             const doc = await db.categories.findOne(id).exec();
             if (doc) await doc.remove();
@@ -613,6 +646,7 @@ export const api = {
             if (!user || !user.id) {
                 throw new Error("Sessão de usuário ausente. Faça login novamente para cadastrar.");
             }
+            assertCan(user, ['inventory_write']);
 
             if (!data.name || !data.name.trim()) {
                 throw new Error("Nome do fornecedor é obrigatório");
@@ -647,7 +681,7 @@ export const api = {
                 bank_info: data.bank_info || '',
                 credit_limit: Number(data.credit_limit || 0),
                 is_active: data.is_active !== undefined ? data.is_active : true,
-                user_id: user.id,
+                user_id: user.ownerId || user.id,
                 updated_at: new Date().toISOString()
             };
 
@@ -660,6 +694,7 @@ export const api = {
             }
         },
         update: async (id, updates) => {
+            await requirePermission(['inventory_write']);
             const db = await getDatabase();
             const doc = await db.providers.findOne(id).exec();
             if (!doc) throw new Error("Fornecedor não encontrado");
@@ -681,6 +716,7 @@ export const api = {
             return doc.toJSON();
         },
         delete: async (id) => {
+            await requirePermission(['can_delete']);
             const db = await getDatabase();
             const doc = await db.providers.findOne(id).exec();
             if (doc) await doc.remove();
@@ -701,16 +737,52 @@ export const api = {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Usuário não autenticado");
 
+            const cleanEmail = String(email).trim().toLowerCase();
+
+            // 1. Registra o convite. Novo membro começa SOMENTE LEITURA —
+            //    o dono libera permissões nos toggles da tela de equipe.
             const { data, error } = await supabase
                 .from('team_members')
                 .insert({
                     owner_id: user.id,
-                    member_email: email,
-                    role: 'employee'
+                    member_email: cleanEmail,
+                    role: 'employee',
+                    permissions: {}
                 })
                 .select()
                 .single();
 
+            if (error) throw error;
+
+            // 2. Dispara o e-mail de convite (Edge Function invite-member, que
+            //    tem service role para chamar auth.admin.inviteUserByEmail).
+            //    Se a função não estiver deployada o convite continua valendo:
+            //    o membro pode criar a conta manualmente com este e-mail.
+            let emailSent = false;
+            let alreadyRegistered = false;
+            try {
+                const { data: fnData, error: fnError } = await supabase.functions.invoke('invite-member', {
+                    body: { email: cleanEmail }
+                });
+                if (!fnError) {
+                    emailSent = !!fnData?.emailSent;
+                    alreadyRegistered = !!fnData?.alreadyRegistered;
+                } else {
+                    console.warn('invite-member indisponível:', fnError.message);
+                }
+            } catch (fnErr) {
+                console.warn('invite-member indisponível:', fnErr?.message);
+            }
+
+            return { ...data, emailSent, alreadyRegistered };
+        },
+        updatePermissions: async (id, permissions) => {
+            const { data, error } = await supabase
+                .from('team_members')
+                .update({ permissions })
+                .eq('id', id)
+                .select()
+                .single();
             if (error) throw error;
             return data;
         },
@@ -750,6 +822,7 @@ export const api = {
             if (!user || !user.id) {
                 throw new Error('Usuário não autenticado. O ID do usuário é obrigatório para criar uma receita.');
             }
+            assertCan(user, ['technical_sheet_write']);
 
             if (!payload.finished_product_id) {
                 throw new Error('Produto final (finished_product_id) é obrigatório.');
@@ -786,7 +859,7 @@ export const api = {
                 is_active: true,
                 auto_production: false,
                 ingredients,
-                user_id: user.id,
+                user_id: user.ownerId || user.id,
                 created_at: now,
                 updated_at: now
             };
@@ -795,6 +868,7 @@ export const api = {
             return doc.toJSON();
         },
         update: async (id, updates) => {
+            await requirePermission(['technical_sheet_write']);
             const db = await getDatabase();
             if (!db) throw new Error('Banco de dados local não inicializado.');
 
@@ -837,6 +911,7 @@ export const api = {
             return updatedDoc.toJSON();
         },
         softDelete: async (id) => {
+            await requirePermission(['can_delete']);
             const db = await getDatabase();
             if (!db) throw new Error('Banco de dados local não inicializado.');
 

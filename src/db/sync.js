@@ -1,5 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
-import { ensureSupabaseSession } from '../services/authHelper';
+import { ensureSupabaseSession, getCurrentUser, canTeamMember } from '../services/authHelper';
 
 /**
  * Fields that exist in RxDB (embedded/denormalized) but NOT in the Supabase
@@ -107,7 +107,113 @@ const TIMESTAMP_FIELD_OVERRIDES = {
     order_payments: 'created_at', // Schema only has created_at, no updated_at
 };
 
-export const syncCollection = async (collection, tableName) => {
+/**
+ * Pull de receitas: recipes + recipe_ingredients (relacional no PG) remontados
+ * no formato embutido do RxDB. Sem isso, fichas criadas em outra máquina — ou
+ * pelo dono da loja, no modo equipe — nunca chegam ao banco local. O escopo
+ * (dono + equipe) vem da RLS; não filtramos por user_id aqui.
+ */
+const pullRecipes = async (collection) => {
+    const errors = [];
+    let pulled = 0;
+
+    const lastSync = localStorage.getItem('sync_recipes') || new Date(0).toISOString();
+    const { data: remoteRecipes, error: recipesError } = await supabase
+        .from('recipes')
+        .select('*')
+        .gt('updated_at', lastSync);
+
+    if (recipesError) {
+        errors.push(`[PULL recipes] ${recipesError.message}`);
+        return { pulled, errors };
+    }
+    if (!remoteRecipes || remoteRecipes.length === 0) {
+        return { pulled, errors };
+    }
+
+    console.log(`↓ Pulling ${remoteRecipes.length} changes for recipes`);
+    const lastTimestamp = remoteRecipes.reduce((max, item) =>
+        item.updated_at > max ? item.updated_at : max, lastSync);
+
+    const activeRows = remoteRecipes.filter(r => !r.deleted_at);
+    const deletedRows = remoteRecipes.filter(r => r.deleted_at);
+
+    if (activeRows.length > 0) {
+        const { data: ingredientRows, error: ingredientsError } = await supabase
+            .from('recipe_ingredients')
+            .select('*')
+            .in('recipe_id', activeRows.map(r => r.id))
+            .is('deleted_at', null);
+
+        if (ingredientsError) {
+            // Sem os ingredientes o upsert seria destrutivo — não avança o
+            // cursor e tenta de novo no próximo ciclo.
+            errors.push(`[PULL recipe_ingredients] ${ingredientsError.message}`);
+            return { pulled, errors };
+        }
+
+        const ingredientsByRecipe = {};
+        for (const row of ingredientRows || []) {
+            if (!ingredientsByRecipe[row.recipe_id]) ingredientsByRecipe[row.recipe_id] = [];
+            ingredientsByRecipe[row.recipe_id].push({
+                id: row.id,
+                input_product_id: row.input_product_id,
+                quantity: Number(row.quantity) || 0,
+                unit: row.unit || '',
+                loss_percentage: Number(row.loss_percentage) || 0,
+                discount_from_stock: row.discount_from_stock !== false,
+            });
+        }
+
+        try {
+            const toUpsert = [];
+            for (const remote of activeRows) {
+                const localDoc = await collection.findOne(remote.id).exec();
+                if (localDoc) {
+                    // Não ressuscitar tombstone local ainda não enviado
+                    if (localDoc.get('deleted_at')) continue;
+                    // Last-write-wins por updated_at. Comparação por Date.parse:
+                    // o PostgREST devolve '+00:00' e o local grava 'Z' — comparar
+                    // como string mentiria.
+                    const localTs = Date.parse(localDoc.get('updated_at') || '') || 0;
+                    const remoteTs = Date.parse(remote.updated_at || '') || 0;
+                    if (localTs && remoteTs <= localTs) continue;
+                }
+                const clean = sanitizeForRxDB(remote, collection);
+                clean.ingredients = ingredientsByRecipe[remote.id] || [];
+                // Schema local declara timestamps como string — null quebraria
+                if (clean.deleted_at == null) delete clean.deleted_at;
+                if (clean.created_at == null) delete clean.created_at;
+                toUpsert.push(clean);
+            }
+            if (toUpsert.length > 0) {
+                await collection.bulkUpsert(toUpsert);
+                pulled += toUpsert.length;
+            }
+        } catch (upsertErr) {
+            errors.push(`[PULL-UPSERT recipes] ${upsertErr.message}`);
+            console.error('Sync pull upsert error recipes:', upsertErr);
+            return { pulled, errors };
+        }
+    }
+
+    for (const deleted of deletedRows) {
+        try {
+            const localDoc = await collection.findOne(deleted.id).exec();
+            if (localDoc) {
+                await localDoc.remove();
+                pulled++;
+            }
+        } catch {
+            // Ignore if not found
+        }
+    }
+
+    localStorage.setItem('sync_recipes', lastTimestamp);
+    return { pulled, errors };
+};
+
+export const syncCollection = async (collection, tableName, { skipPush = false } = {}) => {
     const errors = [];
     let pulled = 0;
     let pushed = 0;
@@ -116,8 +222,15 @@ export const syncCollection = async (collection, tableName) => {
         const timestampField = TIMESTAMP_FIELD_OVERRIDES[tableName] || 'updated_at';
 
         // ─── 1. PULL: Fetch changes from Supabase ─────────────────────
-        // Evitar pull cego de recipes, pois o Supabase não retorna os ingredientes embutidos na mesma tabela,
-        // o que causaria um bulkUpsert destrutivo no RxDB (apagando ingredientes) e 409 Conflicts.
+        // recipes tem pull próprio (ver abaixo): os ingredientes são relacionais
+        // no PG (recipe_ingredients) e precisam ser remontados como array
+        // embutido antes do upsert no RxDB — um pull cego apagaria os
+        // ingredientes locais.
+        if (tableName === 'recipes') {
+            const recipesResult = await pullRecipes(collection);
+            pulled += recipesResult.pulled;
+            errors.push(...recipesResult.errors);
+        }
         if (tableName !== 'recipes') {
             const lastSync = localStorage.getItem(`sync_${tableName}`) || new Date(0).toISOString();
 
@@ -189,6 +302,11 @@ export const syncCollection = async (collection, tableName) => {
         } // Fim do if (tableName !== 'recipes')
 
         // ─── 2. PUSH: Push local changes to Supabase ─────────────────────
+        // Modo equipe: membro sem permissão de escrita não empurra nada desta
+        // tabela — a RLS rejeitaria e o eco do pull viraria erro em loop.
+        if (skipPush) {
+            return { pulled, pushed, errors };
+        }
         const lastPush = localStorage.getItem(`push_${tableName}`) || new Date(0).toISOString();
         const localChanges = await collection.find({
             selector: {
@@ -310,10 +428,22 @@ export const syncAll = async (db) => {
     }
 
     console.log('🔄 Starting sync...');
-    
+
     // NOVO: Garantir que o client do Supabase tenha uma sessão válida em memória
     // antes de disparar requisições REST/RPC.
     await ensureSupabaseSession();
+
+    // Modo equipe: permissões do membro decidem o que pode ser EMPURRADO.
+    // O pull é sempre liberado (a RLS escopa o que ele enxerga).
+    const user = await getCurrentUser().catch(() => null);
+    const PUSH_PERMISSIONS_BY_TABLE = {
+        products: ['inventory_write', 'technical_sheet_write'],
+        providers: ['inventory_write'],
+        movements: ['inventory_write'],
+        product_batches: ['inventory_write'],
+        categories: ['inventory_write'],
+        recipes: ['technical_sheet_write'],
+    };
 
     const startTime = Date.now();
     const allErrors = [];
@@ -342,7 +472,9 @@ export const syncAll = async (db) => {
 
     for (const [collection, tableName] of collections) {
         try {
-            const result = await syncCollection(collection, tableName);
+            const requiredPerms = PUSH_PERMISSIONS_BY_TABLE[tableName];
+            const skipPush = !!(user?.isTeamMember && requiredPerms && !canTeamMember(user, requiredPerms));
+            const result = await syncCollection(collection, tableName, { skipPush });
             totalPulled += result.pulled;
             totalPushed += result.pushed;
             if (result.errors.length > 0) {

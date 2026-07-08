@@ -1,6 +1,7 @@
  
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { resolveTeamMembership } from '../services/authHelper';
 
 const AuthContext = createContext({});
 
@@ -39,8 +40,14 @@ export const AuthProvider = ({ children }) => {
                             session.user.role = profile.role; // Override role from profile
                         }
 
-                        // FORCE SINGLE USER MODE (Stability Fix)
-                        session.user.ownerId = session.user.id;
+                        // MODO EQUIPE: membro convidado opera na loja do dono
+                        // (team_members.owner_id) com as permissões liberadas
+                        // pelo dono; quem não é membro é dono da própria loja.
+                        const membership = await resolveTeamMembership(session.user.id);
+                        session.user.ownerId = membership.ownerId;
+                        session.user.isTeamMember = membership.ownerId !== session.user.id;
+                        session.user.teamRole = membership.teamRole;
+                        session.user.teamPermissions = membership.permissions || {};
                     }
                     setUser(session?.user ?? null);
                 }
@@ -70,7 +77,11 @@ export const AuthProvider = ({ children }) => {
                         session.user.role = profile.role;
                     }
 
-                    session.user.ownerId = session.user.id;
+                    const membership = await resolveTeamMembership(session.user.id);
+                    session.user.ownerId = membership.ownerId;
+                    session.user.isTeamMember = membership.ownerId !== session.user.id;
+                    session.user.teamRole = membership.teamRole;
+                    session.user.teamPermissions = membership.permissions || {};
                 }
                 setUser(session?.user ?? null);
             } else if (event === 'SIGNED_OUT') {

@@ -1,5 +1,6 @@
 import React from 'react';
-import { HashRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Navigate, Outlet, useNavigate } from 'react-router-dom';
+import { PASSWORD_SETUP_FLAG } from './bootstrapAuthRedirect';
 import Layout from './components/layout/Layout';
 import Dashboard from './pages/Dashboard';
 import Movements from './pages/Movements';
@@ -53,6 +54,28 @@ import TechnicalSheetPricing from './pages/TechnicalSheet/Pricing';
 import TechnicalSheetStaff from './pages/TechnicalSheet/Staff';
 import TechnicalSheetProductDetail from './pages/TechnicalSheet/ProductDetail';
 import TechnicalSheetSettings from './pages/TechnicalSheet/Settings';
+
+/**
+ * Se o app abriu por um link de convite/recuperação de senha (flag gravado em
+ * bootstrapAuthRedirect.js antes do supabase-js consumir o token do hash),
+ * leva direto para a tela de definir senha.
+ */
+const PasswordSetupGate = () => {
+    const navigate = useNavigate();
+
+    React.useEffect(() => {
+        try {
+            if (sessionStorage.getItem(PASSWORD_SETUP_FLAG) === '1') {
+                sessionStorage.removeItem(PASSWORD_SETUP_FLAG);
+                navigate('/update-password', { replace: true });
+            }
+        } catch {
+            // sessionStorage indisponível — segue o fluxo normal
+        }
+    }, [navigate]);
+
+    return null;
+};
 
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
@@ -114,6 +137,7 @@ function App() {
 
   return (
     <Router>
+      <PasswordSetupGate />
       <Toaster position="top-center" richColors theme="system" closeButton />
       <OfflineIndicator />
       <AuthProvider>

@@ -3,7 +3,7 @@
 // Fase 2 (Opcao C): persistencia real online-first via Supabase, sem ocupar
 // colecoes do RxDB. Espelha o padrao de api.teams (services/api.js).
 import { supabase } from '../../../lib/supabaseClient';
-import { getCurrentUser } from '../../../services/authHelper';
+import { getCurrentUser, canTeamMember } from '../../../services/authHelper';
 
 export interface WorkbookSettingsPayload {
   workDaysPerWeek: number;
@@ -75,7 +75,12 @@ async function requireUserId(): Promise<string> {
   if (!user || !user.id) {
     throw new Error('Sessao expirada. Faca login novamente para salvar os dados.');
   }
-  return user.id;
+  // Modo equipe: membro precisa da permissão de ficha técnica liberada pelo
+  // dono; os dados do workbook pertencem ao dono da loja (user_id = ownerId).
+  if (!canTeamMember(user, ['technical_sheet_write'])) {
+    throw new Error('Você não tem permissão para editar a ficha técnica. Peça ao dono da conta.');
+  }
+  return user.ownerId || user.id;
 }
 
 const nowIso = () => new Date().toISOString();
@@ -88,6 +93,7 @@ async function insertRow(table: string, row: Row) {
 }
 
 async function updateRow(table: string, id: string, row: Row) {
+  await requireUserId(); // valida sessão + permissão de equipe
   const { data, error } = await supabase
     .from(table)
     .update({ ...row, updated_at: nowIso() })
@@ -99,6 +105,7 @@ async function updateRow(table: string, id: string, row: Row) {
 }
 
 async function softDeleteRow(table: string, id: string) {
+  await requireUserId(); // valida sessão + permissão de equipe
   const { error } = await supabase
     .from(table)
     .update({ deleted_at: nowIso(), updated_at: nowIso() })
