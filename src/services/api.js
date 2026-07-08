@@ -733,14 +733,37 @@ export const api = {
             if (error) throw error;
             return data;
         },
+        // Só o INSERT (caminho crítico, rápido). O e-mail vai numa chamada
+        // separada (sendInviteEmail) que a UI dispara em background, para o
+        // membro aparecer na lista na hora sem esperar a Edge Function.
         invite: async (email) => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("Usuário não autenticado");
 
             const cleanEmail = String(email).trim().toLowerCase();
 
-            // 1. Registra o convite. Novo membro começa SOMENTE LEITURA —
-            //    o dono libera permissões nos toggles da tela de equipe.
+            // Regra: uma conta é DONO ou MEMBRO, nunca os dois. Bloqueia antes
+            // de inserir se o e-mail já é proprietário ou membro de outra
+            // equipe. (O banco também barra — defesa em profundidade.)
+            try {
+                const { data: status, error: rpcError } = await supabase.rpc('check_invite_email', {
+                    p_email: cleanEmail,
+                });
+                if (!rpcError && status) {
+                    if (status === 'owner') {
+                        const e = new Error('OWNER'); e.inviteBlock = 'owner'; throw e;
+                    }
+                    if (status === 'member_elsewhere') {
+                        const e = new Error('MEMBER_ELSEWHERE'); e.inviteBlock = 'member_elsewhere'; throw e;
+                    }
+                }
+            } catch (err) {
+                if (err.inviteBlock) throw err; // erro de regra: propaga
+                console.warn('check_invite_email indisponível:', err?.message); // rede: segue (o banco barra)
+            }
+
+            // Novo membro começa SOMENTE LEITURA — o dono libera permissões
+            // nos toggles da tela de equipe.
             const { data, error } = await supabase
                 .from('team_members')
                 .insert({
@@ -753,28 +776,29 @@ export const api = {
                 .single();
 
             if (error) throw error;
-
-            // 2. Dispara o e-mail de convite (Edge Function invite-member, que
-            //    tem service role para chamar auth.admin.inviteUserByEmail).
-            //    Se a função não estiver deployada o convite continua valendo:
-            //    o membro pode criar a conta manualmente com este e-mail.
-            let emailSent = false;
-            let alreadyRegistered = false;
+            return data;
+        },
+        // Dispara o e-mail de convite (Edge Function invite-member, service
+        // role → auth.admin.inviteUserByEmail). Se não estiver deployada, o
+        // convite continua valendo: o membro cria a conta com este e-mail.
+        sendInviteEmail: async (email) => {
+            const cleanEmail = String(email).trim().toLowerCase();
             try {
                 const { data: fnData, error: fnError } = await supabase.functions.invoke('invite-member', {
                     body: { email: cleanEmail }
                 });
-                if (!fnError) {
-                    emailSent = !!fnData?.emailSent;
-                    alreadyRegistered = !!fnData?.alreadyRegistered;
-                } else {
+                if (fnError) {
                     console.warn('invite-member indisponível:', fnError.message);
+                    return { emailSent: false, alreadyRegistered: false };
                 }
+                return {
+                    emailSent: !!fnData?.emailSent,
+                    alreadyRegistered: !!fnData?.alreadyRegistered,
+                };
             } catch (fnErr) {
                 console.warn('invite-member indisponível:', fnErr?.message);
+                return { emailSent: false, alreadyRegistered: false };
             }
-
-            return { ...data, emailSent, alreadyRegistered };
         },
         updatePermissions: async (id, permissions) => {
             const { data, error } = await supabase

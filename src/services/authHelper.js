@@ -10,14 +10,35 @@ import { env } from '../config/env';
 // (memória + localStorage) para não custar uma query por operação e para
 // funcionar offline.
 let _membershipCache = null; // { userId, ownerId, teamRole, permissions }
+const _refreshInFlight = {}; // userId -> Promise, evita refresh duplicado
 
 const membershipStorageKey = (userId) => `evobit_membership_${userId}`;
 
-export const resolveTeamMembership = async (userId) => {
+const ownerDefault = (userId) => ({ userId, ownerId: userId, teamRole: 'owner', permissions: {} });
+
+/**
+ * Lê o membership do cache (memória → localStorage) de forma SÍNCRONA, sem
+ * rede. É o que destrava o boot do app na hora: nada espera a query do
+ * Supabase. Retorna null se não houver nada em cache ainda.
+ */
+export const readCachedMembership = (userId) => {
     if (!userId) return null;
     if (_membershipCache?.userId === userId) return _membershipCache;
-
     try {
+        const raw = localStorage.getItem(membershipStorageKey(userId));
+        if (raw) {
+            _membershipCache = { ...JSON.parse(raw), userId };
+            return _membershipCache;
+        }
+    } catch { /* cache corrompido — ignora */ }
+    return null;
+};
+
+/** Busca o membership na nuvem (com timeout) e atualiza os caches. */
+const fetchMembership = async (userId) => {
+    if (_refreshInFlight[userId]) return _refreshInFlight[userId];
+
+    const promise = (async () => {
         const res = await Promise.race([
             supabase
                 .from('team_members')
@@ -35,20 +56,37 @@ export const resolveTeamMembership = async (userId) => {
             permissions: res.data?.permissions || {},
         };
         _membershipCache = membership;
-        localStorage.setItem(membershipStorageKey(userId), JSON.stringify(membership));
+        try { localStorage.setItem(membershipStorageKey(userId), JSON.stringify(membership)); } catch { /* quota */ }
         return membership;
+    })();
+
+    _refreshInFlight[userId] = promise;
+    try {
+        return await promise;
+    } finally {
+        delete _refreshInFlight[userId];
+    }
+};
+
+/**
+ * Resolve o membership. Se já houver cache, retorna na hora e dispara um
+ * refresh em background (não bloqueia). Sem cache, faz UMA query (com timeout)
+ * e cai para "dono da própria loja" se a rede falhar.
+ */
+export const resolveTeamMembership = async (userId, { forceRefresh = false } = {}) => {
+    if (!userId) return null;
+
+    const cached = readCachedMembership(userId);
+    if (cached && !forceRefresh) {
+        fetchMembership(userId).catch(() => { /* background: mantém o cache atual */ });
+        return cached;
+    }
+
+    try {
+        return await fetchMembership(userId);
     } catch (err) {
-        console.warn('Membership lookup offline/falhou — usando cache local:', err?.message);
-        try {
-            const cached = localStorage.getItem(membershipStorageKey(userId));
-            if (cached) {
-                _membershipCache = { ...JSON.parse(cached), userId };
-                return _membershipCache;
-            }
-        } catch { /* cache corrompido — segue para o fallback */ }
-        // Sem cache e sem rede: opera como loja própria. NÃO memoiza, para a
-        // próxima chamada tentar resolver de novo quando a rede voltar.
-        return { userId, ownerId: userId, teamRole: 'owner', permissions: {} };
+        console.warn('Membership lookup offline/falhou — usando cache/local:', err?.message);
+        return cached || ownerDefault(userId);
     }
 };
 

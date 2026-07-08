@@ -34,26 +34,47 @@ const TeamSettings = () => {
         }
     };
 
+    // Plano gratuito: até 2 membros. Acima disso, o dono contrata membros
+    // adicionais (o banco é a fonte da verdade; aqui é só o atalho de UX).
+    const MEMBER_LIMIT = 2;
+
     const handleInvite = async (e) => {
         e.preventDefault();
         if (!inviteEmail) return;
 
+        if (members.length >= MEMBER_LIMIT) {
+            toast.error(t('team', 'memberLimitReached'));
+            return;
+        }
+
+        const email = inviteEmail;
         try {
             setInviting(true);
-            const result = await api.teams.invite(inviteEmail);
-            if (result.emailSent) {
-                toast.success(t('team', 'inviteEmailSent'));
-            } else if (result.alreadyRegistered) {
-                toast.success(t('team', 'inviteExistingAccount'));
-            } else {
-                toast.warning(t('team', 'inviteEmailNotSent'));
-            }
+            // 1. INSERT (rápido). Já reflete na lista e libera o form.
+            const member = await api.teams.invite(email);
+            setMembers(prev => [...prev, member]);
             setInviteEmail('');
-            loadData();
+            toast.success(t('team', 'inviteSuccess'));
+
+            // 2. E-mail em background: não bloqueia a UI. Toast de follow-up.
+            api.teams.sendInviteEmail(email)
+                .then((res) => {
+                    if (res.emailSent) toast.success(t('team', 'inviteEmailSent'));
+                    else if (res.alreadyRegistered) toast.info(t('team', 'inviteExistingAccount'));
+                    else toast.warning(t('team', 'inviteEmailNotSent'));
+                })
+                .catch(() => toast.warning(t('team', 'inviteEmailNotSent')));
         } catch (error) {
             console.error(error);
-            if (error.code === '23505') {
+            if (error.inviteBlock === 'owner') {
+                toast.error(t('team', 'inviteBlockedOwner'));
+            } else if (error.inviteBlock === 'member_elsewhere') {
+                toast.error(t('team', 'inviteBlockedMemberElsewhere'));
+            } else if (error.code === '23505') {
                 toast.error(t('team', 'alreadyMember'));
+            } else if (/limite|limit/i.test(error.message || '')) {
+                // Trigger de limite de membros (regra de negócio no banco)
+                toast.error(t('team', 'memberLimitReached'));
             } else {
                 toast.error(t('team', 'inviteError'));
             }

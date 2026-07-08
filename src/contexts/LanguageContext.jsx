@@ -276,7 +276,10 @@ const translations = {
                 permDelete: "Excluir registros",
                 readOnlyHint: "Sem permissões marcadas, o membro só visualiza.",
                 permissionsUpdated: "Permissões atualizadas.",
-                permissionsError: "Erro ao salvar permissões."
+                permissionsError: "Erro ao salvar permissões.",
+                memberLimitReached: "Limite de 2 membros atingido. Para adicionar mais, contrate membros adicionais.",
+                inviteBlockedOwner: "Este e-mail já possui uma conta própria no sistema. Para virar membro, a conta precisa ser excluída.",
+                inviteBlockedMemberElsewhere: "Este e-mail já é membro de outra equipe."
             },
             inventory: {
                 title: "Estoque",
@@ -725,7 +728,10 @@ const translations = {
                 permDelete: "Delete records",
                 readOnlyHint: "With no permissions checked, the member is view-only.",
                 permissionsUpdated: "Permissions updated.",
-                permissionsError: "Error saving permissions."
+                permissionsError: "Error saving permissions.",
+                memberLimitReached: "2-member limit reached. To add more, purchase additional seats.",
+                inviteBlockedOwner: "This email already has its own account. To become a member, that account must be deleted first.",
+                inviteBlockedMemberElsewhere: "This email is already a member of another team."
             },
             inventory: {
                 title: "Inventory",
@@ -1173,7 +1179,10 @@ const translations = {
                 permDelete: "Eliminar registros",
                 readOnlyHint: "Sin permisos marcados, el miembro solo visualiza.",
                 permissionsUpdated: "Permisos actualizados.",
-                permissionsError: "Error al guardar permisos."
+                permissionsError: "Error al guardar permisos.",
+                memberLimitReached: "Límite de 2 miembros alcanzado. Para agregar más, contrata miembros adicionales.",
+                inviteBlockedOwner: "Este correo ya tiene su propia cuenta. Para ser miembro, esa cuenta debe eliminarse primero.",
+                inviteBlockedMemberElsewhere: "Este correo ya es miembro de otro equipo."
             },
             inventory: {
                 title: "Inventario",
