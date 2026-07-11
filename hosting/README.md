@@ -37,7 +37,18 @@ Envie o arquivo para a pasta `user/` do seu site, de modo que fique acessível e
 https://evobit.com.br/user   (ou  https://evobit.com.br/user/index.html)
 ```
 
-Qualquer hospedagem serve (cPanel/FTP, Vercel, Netlify, S3…). É HTML estático.
+Qualquer hospedagem serve (é HTML estático). O `evobit.com.br` está na
+**Hostinger** (hPanel) — passo a passo lá:
+
+1. hpanel.hostinger.com → login → **Websites** → **Gerenciar** no `evobit.com.br`.
+2. Menu lateral → **Arquivos** → **Gerenciador de arquivos**.
+3. Entre em **`public_html`** (a raiz onde está o site atual).
+4. Botão **Nova pasta** → nome `user` → criar.
+5. Entre na pasta `user` → botão **Upload** → selecione o `index.html` já
+   configurado (passo 1) → aguarde concluir.
+6. Teste: `https://evobit.com.br/user` deve abrir a página com a mensagem
+   "Este link é inválido ou expirou" (esperado sem um convite — confirma que
+   está no ar e falando com o Supabase).
 Use **HTTPS** — o Supabase recusa redirect para http.
 
 ### 3. Deploy da Edge Function do convite
@@ -68,3 +79,42 @@ Authentication → **URL Configuration**:
   uso único. Reenvie o convite (remova e convide de novo).
 - A página só **define a senha**; todo o resto (permissões, dados) continua no
   app. Ela não expõe nenhum dado do sistema.
+
+---
+
+# App web em app.evobit.com.br (próximo passo)
+
+A landing em `evobit.com.br` aponta TODOS os CTAs ("Entrar", "Criar conta",
+"Ativar módulo") para `https://app.evobit.com.br/login|/register`. Enquanto o
+subdomínio não existir, esses botões dão erro de DNS. Como publicar o app web
+lá (a build do Vite já é web-ready):
+
+1. **Build com as credenciais**: crie `.env.production` na raiz do repo com
+   `VITE_SUPABASE_URL` e `VITE_SUPABASE_ANON_KEY` e rode `npm run build`.
+   A saída fica em `dist/`.
+2. **Criar o subdomínio na Hostinger**: hPanel → Domínios → Subdomínios →
+   criar `app` (vira `app.evobit.com.br`, com pasta própria, ex.:
+   `public_html/app` ou `domains/app.evobit.com.br/public_html`).
+3. **Subir o conteúdo de `dist/`** para essa pasta (Gerenciador de arquivos →
+   Upload; dá para zipar `dist/`, subir o .zip e extrair lá).
+4. **Rotas**: o app usa HashRouter (`#/login`), mas a landing linka para
+   `/login` (caminho). Crie um `.htaccess` na pasta do subdomínio com fallback
+   para o index (LiteSpeed/Apache):
+
+   ```apache
+   RewriteEngine On
+   RewriteCond %{REQUEST_FILENAME} !-f
+   RewriteCond %{REQUEST_FILENAME} !-d
+   RewriteRule . /index.html [L]
+   ```
+
+   Assim `app.evobit.com.br/login` carrega o app (e o router assume).
+5. **Supabase**: adicionar `https://app.evobit.com.br` em Auth → URL
+   Configuration → Redirect URLs (e considerar como Site URL).
+6. **SSL**: hPanel emite certificado para o subdomínio (Let's Encrypt) —
+   conferir o cadeado antes de divulgar.
+
+Com o app web no ar, o convite pode opcionalmente redirecionar direto para
+`https://app.evobit.com.br` (o fluxo de definir senha já é tratado pelo
+próprio app via `bootstrapAuthRedirect` + `PasswordSetupGate`) — a página
+`/user` continua funcionando como alternativa leve.
