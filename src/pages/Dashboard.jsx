@@ -180,7 +180,7 @@ const Dashboard = () => {
                 current_stock: 50,
                 min_stock: 10,
                 category: 'Testes',
-                user_id: user.id, // REQUIRED FOR SYNC
+                user_id: user.ownerId || user.id, // REQUIRED FOR SYNC
                 updated_at: now.toISOString()
             });
 
@@ -201,7 +201,7 @@ const Dashboard = () => {
                     quantity: qty, // FIXED: Schema expects 'quantity'
                     date: date.toISOString(),
                     reason: 'Teste Automático',
-                    user_id: user.id, // REQUIRED FOR SYNC
+                    user_id: user.ownerId || user.id, // REQUIRED FOR SYNC
                     updated_at: date.toISOString()
                 });
             }

@@ -34,25 +34,73 @@ const TeamSettings = () => {
         }
     };
 
+    // Plano gratuito: até 2 membros. Acima disso, o dono contrata membros
+    // adicionais (o banco é a fonte da verdade; aqui é só o atalho de UX).
+    const MEMBER_LIMIT = 2;
+
     const handleInvite = async (e) => {
         e.preventDefault();
         if (!inviteEmail) return;
 
+        if (members.length >= MEMBER_LIMIT) {
+            toast.error(t('team', 'memberLimitReached'));
+            return;
+        }
+
+        const email = inviteEmail;
         try {
             setInviting(true);
-            await api.teams.invite(inviteEmail);
-            toast.success(t('team', 'inviteSuccess'));
+            // 1. INSERT (rápido). Já reflete na lista e libera o form.
+            const member = await api.teams.invite(email);
+            setMembers(prev => [...prev, member]);
             setInviteEmail('');
-            loadData();
+            toast.success(t('team', 'inviteSuccess'));
+
+            // 2. E-mail em background: não bloqueia a UI. Toast de follow-up.
+            api.teams.sendInviteEmail(email)
+                .then((res) => {
+                    if (res.emailSent) toast.success(t('team', 'inviteEmailSent'));
+                    else if (res.alreadyRegistered) toast.info(t('team', 'inviteExistingAccount'));
+                    else toast.warning(t('team', 'inviteEmailNotSent'));
+                })
+                .catch(() => toast.warning(t('team', 'inviteEmailNotSent')));
         } catch (error) {
             console.error(error);
-            if (error.code === '23505') {
+            if (error.inviteBlock === 'owner') {
+                toast.error(t('team', 'inviteBlockedOwner'));
+            } else if (error.inviteBlock === 'member_elsewhere') {
+                toast.error(t('team', 'inviteBlockedMemberElsewhere'));
+            } else if (error.code === '23505') {
                 toast.error(t('team', 'alreadyMember'));
+            } else if (/limite|limit/i.test(error.message || '')) {
+                // Trigger de limite de membros (regra de negócio no banco)
+                toast.error(t('team', 'memberLimitReached'));
             } else {
                 toast.error(t('team', 'inviteError'));
             }
         } finally {
             setInviting(false);
+        }
+    };
+
+    // Permissões liberadas pelo dono (novo membro começa somente leitura)
+    const PERMISSION_OPTIONS = [
+        { key: 'inventory_write', labelKey: 'permInventory' },
+        { key: 'technical_sheet_write', labelKey: 'permTechnicalSheet' },
+        { key: 'can_delete', labelKey: 'permDelete' },
+    ];
+
+    const handleTogglePermission = async (member, key) => {
+        const updated = { ...(member.permissions || {}), [key]: !(member.permissions?.[key]) };
+        // Otimista: reflete na hora; desfaz recarregando se o servidor recusar
+        setMembers(prev => prev.map(m => (m.id === member.id ? { ...m, permissions: updated } : m)));
+        try {
+            await api.teams.updatePermissions(member.id, updated);
+            toast.success(t('team', 'permissionsUpdated'));
+        } catch (error) {
+            console.error(error);
+            toast.error(t('team', 'permissionsError'));
+            loadData();
         }
     };
 
@@ -136,25 +184,46 @@ const TeamSettings = () => {
                                 </p>
                             ) : (
                                 members.map(member => (
-                                    <div key={member.id} className="flex items-center justify-between p-3 bg-white dark:bg-brand-dark/5 rounded-lg border border-gray-100 dark:border-brand-light/10 shadow-sm">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-gray-100 dark:bg-brand-dark/10 text-gray-500 rounded-full">
-                                                <Users size={16} />
+                                    <div key={member.id} className="p-3 bg-white dark:bg-brand-dark/5 rounded-lg border border-gray-100 dark:border-brand-light/10 shadow-sm">
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="p-2 bg-gray-100 dark:bg-brand-dark/10 text-gray-500 rounded-full">
+                                                    <Users size={16} />
+                                                </div>
+                                                <div>
+                                                    <p className="font-medium text-brand-dark dark:text-brand-light">
+                                                        {member.member_id ? t('team', 'active') : t('team', 'pending')}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500">{member.member_email}</p>
+                                                </div>
                                             </div>
-                                            <div>
-                                                <p className="font-medium text-brand-dark dark:text-brand-light">
-                                                    {member.member_id ? t('team', 'active') : t('team', 'pending')}
-                                                </p>
-                                                <p className="text-xs text-gray-500">{member.member_email}</p>
-                                            </div>
+                                            <button
+                                                onClick={() => handleRemove(member.id)}
+                                                className="p-2 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
+                                                title="Remover Membro"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
                                         </div>
-                                        <button
-                                            onClick={() => handleRemove(member.id)}
-                                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-500/10 rounded-lg transition-colors"
-                                            title="Remover Membro"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+
+                                        {/* Permissões do membro (dono libera aqui; padrão = somente leitura) */}
+                                        <div className="mt-3 pt-3 border-t border-gray-100 dark:border-brand-light/10">
+                                            <p className="text-xs font-semibold text-gray-400 uppercase mb-2">{t('team', 'permissionsTitle')}</p>
+                                            <div className="flex flex-wrap gap-x-4 gap-y-2">
+                                                {PERMISSION_OPTIONS.map(opt => (
+                                                    <label key={opt.key} className="flex items-center gap-2 text-sm text-brand-dark dark:text-brand-light cursor-pointer select-none">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="accent-brand-primary w-4 h-4"
+                                                            checked={member.permissions?.[opt.key] === true}
+                                                            onChange={() => handleTogglePermission(member, opt.key)}
+                                                        />
+                                                        {t('team', opt.labelKey)}
+                                                    </label>
+                                                ))}
+                                            </div>
+                                            <p className="text-xs text-gray-400 mt-2">{t('team', 'readOnlyHint')}</p>
+                                        </div>
                                     </div>
                                 ))
                             )}

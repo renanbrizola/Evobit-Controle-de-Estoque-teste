@@ -15,12 +15,14 @@ vi.mock('sonner', () => ({
 const mockTeamList = vi.fn();
 const mockInvite = vi.fn();
 const mockRemove = vi.fn();
+const mockSendInviteEmail = vi.fn();
 
 vi.mock('../services/api', () => ({
     api: {
         teams: {
             list: (...args) => mockTeamList(...args),
             invite: (...args) => mockInvite(...args),
+            sendInviteEmail: (...args) => mockSendInviteEmail(...args),
             remove: (...args) => mockRemove(...args)
         }
     }
@@ -41,6 +43,7 @@ describe('TeamSettings Component', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         mockTeamList.mockResolvedValue([]);
+        mockSendInviteEmail.mockResolvedValue({ emailSent: true, alreadyRegistered: false });
     });
 
     it('renders correctly', async () => {
@@ -55,7 +58,7 @@ describe('TeamSettings Component', () => {
         });
 
         expect(screen.getByPlaceholderText(/funcionario@email.com/i)).toBeInTheDocument();
-        expect(screen.getByText(/Você \(Dono\)/i)).toBeInTheDocument();
+        expect(screen.getByText(/Você \(Proprietário\)/i)).toBeInTheDocument();
     });
 
     it('invites a member successfully', async () => {

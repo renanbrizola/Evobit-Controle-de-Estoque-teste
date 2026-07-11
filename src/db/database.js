@@ -275,7 +275,7 @@ const createDatabase = async () => {
             'products', 'providers', 'movements', 'product_batches',
             'categories', 'sales', 'sale_items', 'purchases',
             'purchase_items', 'transactions', 'customers',
-            'order_payments', 'receivables', 'sync_events'
+            'order_payments', 'receivables', 'sync_events', 'recipes'
         ];
         collections.forEach(table => {
             localStorage.removeItem(`sync_${table}`);

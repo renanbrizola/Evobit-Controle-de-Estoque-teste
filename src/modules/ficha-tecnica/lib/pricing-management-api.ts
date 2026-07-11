@@ -2,7 +2,7 @@
 
 import { api } from '../../../services/api';
 import { supabase } from '../../../lib/supabaseClient';
-import { getCurrentUser } from '../../../services/authHelper';
+import { getCurrentUser, canTeamMember } from '../../../services/authHelper';
 import { getRecipe, listWorkbookProducts, resetCache } from './recipes-management-api';
 import { calculateSuggestedPrice, simulatePricingScenarios } from './pricing-calculator';
 
@@ -166,7 +166,8 @@ async function upsertPriceRecord(input: PriceRecordInput): Promise<void> {
   let userId: string | null = null;
   try {
     const user = await getCurrentUser();
-    userId = user?.id ?? null;
+    // Modo equipe: o histórico de preços pertence ao dono da loja
+    userId = user?.ownerId ?? user?.id ?? null;
   } catch {
     userId = null;
   }
@@ -244,6 +245,12 @@ async function fetchPriceRecords(): Promise<Map<string, PriceRow>> {
 }
 
 export async function savePrice(payload: SavePricePayload): Promise<PriceRow> {
+  // Modo equipe: precificar exige a permissão de ficha técnica
+  const currentUser = await getCurrentUser();
+  if (!canTeamMember(currentUser, ['technical_sheet_write'])) {
+    throw new Error('Você não tem permissão para precificar. Peça ao proprietário da conta.');
+  }
+
   const recipeId = recipeIdFromVersion(payload.recipeVersionId);
   const recipe = await api.recipes.getById(recipeId);
   if (!recipe || !recipe.finished_product_id) {

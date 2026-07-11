@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabaseClient';
+import { resolveActiveOwnerId } from './authHelper';
 
 const TRIAL_DAYS = 30;
 
@@ -10,7 +11,10 @@ export const licenseService = {
                 return { active: false, type: 'expired', daysLeft: 0, reason: 'unauthenticated' };
             }
 
-            const userId = session.user.id;
+            // MODO EQUIPE: membro convidado NÃO tem licença própria — o acesso
+            // dele depende da assinatura/trial do DONO da loja. Resolve o owner
+            // (retorna o próprio id se não for membro) e checa a licença dele.
+            const userId = await resolveActiveOwnerId(session.user.id);
 
             // Fetch authoritative profile data from Supabase
             const { data: profile, error: profileError } = await supabase

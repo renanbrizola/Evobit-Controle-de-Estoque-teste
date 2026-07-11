@@ -1,10 +1,21 @@
  
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { resolveTeamMembership, readCachedMembership } from '../services/authHelper';
 
 const AuthContext = createContext({});
 
 export const useAuth = () => useContext(AuthContext);
+
+// Grava os campos de equipe no objeto de usuário (mutação in-place).
+const applyMembership = (user, membership) => {
+    const m = membership || { ownerId: user.id, teamRole: 'owner', permissions: {} };
+    user.ownerId = m.ownerId || user.id;
+    user.isTeamMember = user.ownerId !== user.id;
+    user.teamRole = m.teamRole || 'owner';
+    user.teamPermissions = m.permissions || {};
+    return user;
+};
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -39,10 +50,23 @@ export const AuthProvider = ({ children }) => {
                             session.user.role = profile.role; // Override role from profile
                         }
 
-                        // FORCE SINGLE USER MODE (Stability Fix)
-                        session.user.ownerId = session.user.id;
+                        // MODO EQUIPE: aplica o membership do CACHE na hora (sem
+                        // esperar rede) — é o que destrava o boot. Se não houver
+                        // cache ainda, assume dono da própria loja. O valor real
+                        // é confirmado em background logo abaixo.
+                        applyMembership(session.user, readCachedMembership(session.user.id));
                     }
                     setUser(session?.user ?? null);
+
+                    // Refresh do membership em background: não bloqueia a tela.
+                    if (session?.user) {
+                        resolveTeamMembership(session.user.id, { forceRefresh: true })
+                            .then((membership) => {
+                                if (!mounted) return;
+                                setUser((prev) => (prev ? applyMembership({ ...prev }, membership) : prev));
+                            })
+                            .catch(() => { /* mantém o valor do cache */ });
+                    }
                 }
             } catch (error) {
                 console.error("Auth Init Error:", error);
@@ -70,7 +94,18 @@ export const AuthProvider = ({ children }) => {
                         session.user.role = profile.role;
                     }
 
-                    session.user.ownerId = session.user.id;
+                    // Login/refresh: cache primeiro (instantâneo) + confirmação
+                    // em background, mesmo padrão do boot.
+                    applyMembership(session.user, readCachedMembership(session.user.id));
+                    setUser(session.user);
+
+                    resolveTeamMembership(session.user.id, { forceRefresh: true })
+                        .then((membership) => {
+                            if (!mounted) return;
+                            setUser((prev) => (prev ? applyMembership({ ...prev }, membership) : prev));
+                        })
+                        .catch(() => { /* mantém o valor do cache */ });
+                    return;
                 }
                 setUser(session?.user ?? null);
             } else if (event === 'SIGNED_OUT') {

@@ -320,7 +320,7 @@ const Movements = () => {
                 provider: item.provider,
                 validity: item.validity,
                 obs: item.obs,
-                user_id: user?.id, // FIXED: Add user_id for Sync/RLS
+                user_id: user?.ownerId || user?.id, // FIXED: Add user_id for Sync/RLS
                 date: new Date().toISOString() // Ensure date is present
             }));
             await api.movements.createTransaction(apiItems);
